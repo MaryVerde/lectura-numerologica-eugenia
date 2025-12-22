@@ -13,7 +13,7 @@ from reportlab.pdfgen import canvas
 # CONFIGURACIÓN GENERAL
 # =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Místico"
+BRAND = "Eugenia.Místykos"
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | {BRAND}",
@@ -22,8 +22,10 @@ st.set_page_config(
 )
 
 st.title(APP_TITLE)
-st.caption(f"{BRAND} · Versión Gratis + Paga (bloqueada) · Lectura simbólica · PDF")
-
+st.markdown(
+    "*Eugenia Místico · Lectura simbólica*  \n"
+    "Versión gratuita · Interpretación completa en versión paga (PDF personalizado)"
+)
 # =====================================================
 # UTILIDADES NUMEROLÓGICAS
 # =====================================================
@@ -220,10 +222,13 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Mari Eugenia Verde Arrocha"
+        placeholder="Ej: Eugenia Mistkos"
     )
-
-calcular = st.button("✨ Ver mi lectura numerológica")
+st.markdown(
+    "Esta lectura revela la energía que se activa en tu camino.  \n"
+    "Te muestra qué se está moviendo y hacia dónde puedes ir si sigues esa vibración."
+)
+calcular = st.button("✨ Ver mi lectura ahora")
 
 hoy = date.today()
 
@@ -300,7 +305,11 @@ st.download_button(
 # BLOQUE PAGA (Premium)
 # =====================================================
 st.markdown("---")
-st.subheader("🔒 Versión Paga (Bloqueada)")
+st.markdown("🔒 *Versión completa (PDF personalizado)*")
+st.write(
+    "Incluye interpretación profunda de tus números, ciclos y energía personal. "
+    "Disponible tras la consulta."
+)
 
 PASSWORD = os.getenv("APP_PASSWORD")
 clave = st.text_input("Introduce la clave para desbloquear la lectura completa", type="password")
@@ -561,6 +570,5 @@ st.download_button(
     file_name="Lectura_Numerologica_Paga_Eugenia_Mistico.pdf",
     mime="application/pdf",
 )
-#redeplot
 
 st.caption("Lectura simbólica e interpretativa · Eugenia.Místico · Premium")
