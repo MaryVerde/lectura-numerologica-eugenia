@@ -1,4 +1,4 @@
-mport os
+import os
 import unicodedata
 import re
 from datetime import date
@@ -572,3 +572,4 @@ st.download_button(
 )
 
 st.caption("Lectura simbólica e interpretativa · Eugenia.Mystico · Premium")
+
