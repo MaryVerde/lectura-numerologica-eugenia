@@ -561,5 +561,6 @@ st.download_button(
     file_name="Lectura_Numerologica_Paga_Eugenia_Mistico.pdf",
     mime="application/pdf",
 )
+#redeplot
 
 st.caption("Lectura simbólica e interpretativa · Eugenia.Místico · Premium")
