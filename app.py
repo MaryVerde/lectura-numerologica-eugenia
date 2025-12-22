@@ -1,4 +1,4 @@
-import os
+mport os
 import unicodedata
 import re
 from datetime import date
@@ -13,7 +13,7 @@ from reportlab.pdfgen import canvas
 # CONFIGURACIÓN GENERAL
 # =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Místykos"
+BRAND = "Eugenia.Mystikos"
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | {BRAND}",
@@ -222,7 +222,7 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Eugenia Mistkos"
+        placeholder="Ej: Eugenia Mystikos"
     )
 st.markdown(
     "Esta lectura revela la energía que se activa en tu camino.  \n"
@@ -571,4 +571,4 @@ st.download_button(
     mime="application/pdf",
 )
 
-st.caption("Lectura simbólica e interpretativa · Eugenia.Místico · Premium")
+st.caption("Lectura simbólica e interpretativa · Eugenia.Mystico · Premium")
