@@ -310,7 +310,19 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
 st.markdown(
     """
 Esta lectura no es una predicción ni una promesa externa.  
-Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.
+Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
+Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
+
+Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
+La numerología, cuando se usa con consciencia, no limita: *ordena, revela y enfoca*.
+
+Esta versión resumida te muestra el núcleo de tu vibración: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
+Es una lectura clara y simbólica, pensada para que puedas *reconocerte*, no para que dependas de ella.
+
+Si algo de lo que lees resuena, no es casualidad: la energía no grita, *reconoce*.  
+Y cuando reconoces, recuperas poder personal.
+
+La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a recordar con claridad, sostener tu rumbo y elegir con presencia.
 
 ✨ Esta lectura no te quita responsabilidad: te la devuelve.  
 Tómala como una brújula, no como un destino.
@@ -575,3 +587,4 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
