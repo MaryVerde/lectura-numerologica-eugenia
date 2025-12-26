@@ -353,10 +353,32 @@ pin = pinaculo_piramide(fecha_nac)
 
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
+
 if calcular:
     total_usos = incrementar_contador()
-    st.markdown("### ✨ Tu lectura resumida")
+ # 👁️ Vista interna solo para Eugenia
+    if os.getenv("ADMIN_VIEW") == "1":
+        st.markdown(
+            f"""
+            <div style="
+                margin-top:30px;
+                padding:12px;
+                font-size:12px;
+                color:#666;
+                font-style:italic;
+                border-top:1px dashed #ddd;
+                text-align:center;
+            ">
+            🌙 Uso interno · Registro del alma  
+            <br>
+            Esta lectura ha sido activada <b>{total_usos}</b> veces.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
+    st.markdown("### ✨ Tu lectura resumida")
+    
     st.write(f"Mi esencia — Número {es}")
     st.write(lectura_resumida(es))
 
