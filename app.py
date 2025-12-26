@@ -4,6 +4,8 @@ import re
 from datetime import date
 from io import BytesIO
 import textwrap
+import hmac
+import hashlib
 
 import streamlit as st
 from reportlab.lib.pagesizes import LETTER
@@ -13,19 +15,20 @@ from reportlab.pdfgen import canvas
 # CONFIGURACIÓN GENERAL
 # =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Mystikos"
+BRAND = "Eugenia.Mistikos"  # <- forma ÚNICA (sin acento, con K)
 
 st.set_page_config(
-    page_title=f"{APP_TITLE} | {BRAND}",
+    page_title=f"{APP_TITLE} · {BRAND}",
     page_icon="🔮",
     layout="centered"
 )
 
-st.title(APP_TITLE)
+st.title(f"{APP_TITLE} · {BRAND}")
 st.markdown(
-    "*Eugenia Místico · Lectura simbólica*  \n"
-    "Versión gratuita · Interpretación completa en versión paga (PDF personalizado)"
+    f"*{BRAND}*  \n"
+    "Versión Resumida · Interpretación completa en versión completa (PDF personalizado)"
 )
+
 # =====================================================
 # UTILIDADES NUMEROLÓGICAS
 # =====================================================
@@ -124,16 +127,17 @@ def pinaculo_piramide(fecha: date) -> dict:
     return {"base": (p1, p2, p3), "medio": (p4, p5), "cima": p6}
 
 # =====================================================
-# TEXTOS GRATIS (1 PÁRRAFO “LARGO”)
+# TEXTOS RESUMIDOS (1 PÁRRAFO)
+# (NO te los cambio: están como tus resumidos)
 # =====================================================
-LECTURA_GRATIS = {
+LECTURA_RESUMIDA = {
     1:  "Esta vibración marca un inicio real: te empuja a elegir, actuar y abrir camino sin depender de la aprobación externa. La vida te pide claridad en tus decisiones y firmeza para sostener tu identidad. Avanzas cuando alineas intención y acción, dando pasos pequeños pero constantes que construyen una base sólida.",
     2:  "Esta vibración invita a la cooperación y la sensibilidad con centro. Es energía de escucha profunda: percibes más y por eso aprendes a poner límites suaves pero firmes. El crecimiento llega cuando eliges armonía sin sacrificio, cultivando reciprocidad, respeto y calma.",
     3:  "Esta vibración activa creatividad y expresión: te pide mostrar tu voz, compartir ideas y permitir que la alegría sea parte del avance. La clave está en expresarte con enfoque: cuando tu mensaje es claro, lo que creas se vuelve atractivo y con propósito.",
     4:  "Esta vibración habla de orden y constancia: todo mejora cuando estructuras prioridades y avanzas paso a paso. Premia disciplina y paciencia; lo estable se construye con decisiones pequeñas sostenidas. Tu llave es coherencia práctica: menos improvisación, más método.",
     5:  "Esta vibración trae cambio y movimiento: te empuja a expandirte y abrir opciones nuevas. Su reto es la dispersión: no todo lo que aparece es para ti. Creces cuando eliges el cambio con conciencia, soltando rigidez con dirección clara.",
     6:  "Esta vibración se asocia con cuidado y amor consciente. Invita a equilibrar lo personal con lo familiar y a sostener vínculos con madurez. La lección es dar sin vaciarte: límites sanos también son amor. Tu estabilidad emocional es tu base.",
-    7:  "Esta vibración pide una pausa sabia: observar, comprender y escuchar la voz interna. La claridad no viene de la prisa, sino de la profundidad. Es un tiempo ideal para estudiar patrones, ordenar pensamientos y fortalecer intuición con calma.",
+    7:  "Esta vibración pide un momento sabio de observación: comprender y escuchar la voz interna. La claridad no viene de la prisa, sino de la profundidad. Es un tiempo ideal para estudiar patrones, ordenar pensamientos y fortalecer intuición con calma.",
     8:  "Esta vibración activa logro y materialización: pide decisiones estratégicas y administración consciente de recursos. La lección es ética y coherencia: el poder personal se sostiene cuando está alineado con valores. Ordena prioridades y verás estabilidad.",
     9:  "Esta vibración marca cierre e integración: invita a soltar lo que ya cumplió su función y quedarte con el aprendizaje. Favorece limpieza interna y madurez emocional. Cerrar con conciencia aligera la energía y abre un rumbo más coherente.",
     11: "Esta vibración amplifica intuición e inspiración: te vuelve más sensible y perceptiva. Es un tiempo para escuchar señales internas y evitar dispersión emocional. Cuando actúas desde tu verdad, la claridad aparece y tu intuición se vuelve dirección.",
@@ -141,26 +145,57 @@ LECTURA_GRATIS = {
     33: "Esta vibración se orienta al amor consciente y al servicio con madurez emocional. Invita a acompañar sin rescatar y a dar sin vaciarte. Tu sensibilidad se vuelve fortaleza cuando hay límites, estructura y autocuidado.",
 }
 
-PINACULO_TEXTO_GRATIS = (
-    "Este pináculo describe la arquitectura interna de tu camino: cómo se organizan tus aprendizajes por etapas y qué tipo de crecimiento "
-    "la vida te pide integrar. No actúa como una predicción rígida: funciona como un mapa de madurez. Cuando lo comprendes, dejas de "
-    "resistirte a los ciclos y empiezas a usarlos a tu favor, avanzando con más coherencia, confianza y dirección."
-)
-
-ARCANOS_GRATIS = {
-    1:"Inicio consciente.", 2:"Escucha interior.", 3:"Creatividad.", 4:"Orden.", 5:"Aprendizaje.",
-    6:"Elección.", 7:"Dirección.", 8:"Equilibrio.", 9:"Pausa.", 10:"Cambio.", 11:"Fortaleza.",
-    12:"Nueva mirada.", 13:"Transformación.", 14:"Armonía.", 15:"Conciencia.", 16:"Ruptura.",
-    17:"Esperanza.", 18:"Sensibilidad.", 19:"Claridad.", 20:"Renacer.", 21:"Integración.", 22:"Apertura."
-}
+def lectura_resumida(num: int) -> str:
+    return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
 # =====================================================
-# PDF helper (sirve para gratis y paga)
+# PINÁCULO + ARCANO (micro-interpretación resumida)
+# =====================================================
+def pinaculo_micro(pin: dict) -> str:
+    b1, b2, b3 = pin["base"]
+    m1, m2 = pin["medio"]
+    cima = pin["cima"]
+    return (
+        f"Tu pináculo muestra cómo se ordena tu crecimiento por etapas: la base ({b1}, {b2}, {b3}) describe aprendizajes que te forman; "
+        f"el nivel medio ({m1}, {m2}) revela el punto donde se afina tu carácter; y la cima ({cima}) marca la síntesis de tu fuerza interna. "
+        "Úsalo como brújula: cuando alineas hábitos y decisiones con esta estructura, avanzas con más dirección y menos desgaste."
+    )
+
+ARCANOS_RESUMIDOS = {
+    1: "Inicio consciente: una decisión clara abre camino.",
+    2: "Escucha interior: la respuesta se forma desde adentro.",
+    3: "Creatividad: nutre lo que está creciendo.",
+    4: "Orden: estructura y límites te devuelven estabilidad.",
+    5: "Aprendizaje: elige desde valores, no desde presión.",
+    6: "Elección: coherencia entre deseo y verdad.",
+    7: "Dirección: enfoque y disciplina para avanzar.",
+    8: "Equilibrio: ordena lo pendiente con honestidad.",
+    9: "Introspección: comprender primero mejora tu decisión.",
+    10: "Cambio: adaptarte te abre oportunidades.",
+    11: "Fortaleza: calma interna por encima de la reacción.",
+    12: "Nueva mirada: cambia el ángulo y aparece la salida.",
+    13: "Transformación: cerrar a tiempo libera espacio.",
+    14: "Armonía: ajusta extremos y cuida tu ritmo.",
+    15: "Conciencia: reconoce lo que ata para recuperar poder.",
+    16: "Ruptura: cae lo falso para reconstruir con verdad.",
+    17: "Esperanza: guía interna y visión más amable.",
+    18: "Sensibilidad: cuida emociones, evita decidir por miedo.",
+    19: "Claridad: vitalidad y confianza para avanzar.",
+    20: "Renacer: cierre consciente y elección con propósito.",
+    21: "Integración: culminación y preparación del siguiente ciclo.",
+    22: "Apertura: comienza con confianza y presencia.",
+}
+
+def arcano_micro(arc: int) -> str:
+    return ARCANOS_RESUMIDOS.get(arc, "Mensaje no disponible.")
+
+# =====================================================
+# PDF helper (sirve para resumida y completa)
 # =====================================================
 def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=LETTER)
-    width, height = LETTER
+    _, height = LETTER
     x = 50
     y = height - 60
 
@@ -205,16 +240,68 @@ def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
     return buffer.read()
 
 # =====================================================
-# UI – GRATIS (fecha + nombre en la misma línea)
+# CLAVES ÚNICAS (deben estar ANTES de usarse)
 # =====================================================
-st.subheader("🌟 Versión Gratis")
+def normalizar_clave_nombre(txt: str) -> str:
+    """Normaliza para generar claves (sin acentos, sin signos, en mayúsculas)."""
+    txt = unicodedata.normalize("NFD", str(txt))
+    txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
+    txt = re.sub(r"[^A-Za-z\s]", " ", txt)   # deja letras y espacios
+    txt = re.sub(r"\s+", " ", txt).strip().upper()
+    return txt
+
+def primer_nombre_y_apellido(nombre_completo: str) -> str:
+    """
+    Toma PRIMER NOMBRE y PRIMER APELLIDO.
+    Ej: 'Luis Juan Pérez García' -> 'LUIS GARCIA' (último token como apellido)
+    """
+    n = normalizar_clave_nombre(nombre_completo)
+    parts = n.split()
+    if len(parts) >= 2:
+        return f"{parts[0]} {parts[-1]}"
+    return n
+
+def generar_clave_unica(nombre_completo: str, fecha_nac: date, secret: str) -> str:
+    """
+    Clave tipo: EM-7A92-3FQK (ejemplo)
+    Depende de: primer_nombre+apellido + fecha + secreto (no adivinable).
+    """
+    base_nombre = primer_nombre_y_apellido(nombre_completo)
+    payload = f"{base_nombre}|{fecha_nac.isoformat()}".encode("utf-8")
+    digest = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
+    core = digest[:12]  # 12 hex
+    return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}"
+
+# =====================================================
+# UI – VERSIÓN RESUMIDA (con botón)
+# =====================================================
+st.subheader("✨ Versión Resumida")
+st.markdown("""
+Esta lectura no es una predicción ni una promesa externa.  
+Es una *orientación energética consciente*, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
+Cada número refleja una *frecuencia*, y cada frecuencia describe una forma de transitar la vida en este momento.
+
+Aquí no buscamos decirte qué va a pasar, sino ayudarte a *comprender qué energía está disponible para ti ahora*, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
+La numerología, cuando se usa con conciencia, no limita: *ordena, revela y enfoca*.
+
+Esta versión resumida te muestra *el núcleo de tu vibración*: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
+Es una lectura clara y simbólica, pensada para que puedas *reconocerte*, no para que dependas de ella.
+
+Si algo de lo que lees resuena, no es casualidad: la energía no grita, *reconoce*.  
+Y cuando reconoces, recuperas poder personal.
+
+La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a *recordar con claridad*, sostener tu rumbo y elegir con presencia.
+
+✨ *Esta lectura no te quita responsabilidad: te la devuelve.*  
+Tómala como una brújula, no como un destino.
+""")
 
 col1, col2 = st.columns(2)
 with col1:
     fecha_nac = st.date_input(
         "Fecha de nacimiento",
         min_value=date(1940, 1, 1),
-        max_value=date(2025, 12, 31),
+        max_value=date(2040, 12, 31),  # <- hasta 2040
         value=date(1990, 1, 1),
     )
 with col2:
@@ -222,16 +309,15 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Eugenia Mystikos"
+        placeholder="Ej: Eugenia.Mistikos"
     )
-st.markdown(
-    "Esta lectura revela la energía que se activa en tu camino.  \n"
-    "Te muestra qué se está moviendo y hacia dónde puedes ir si sigues esa vibración."
-)
+
+
 calcular = st.button("✨ Ver mi lectura ahora")
 
 hoy = date.today()
 
+# calcular siempre, pero mostrar solo al presionar botón
 es = esencia(fecha_nac)
 mis = sendero_vida(fecha_nac)
 vp = vida_pasada(fecha_nac)
@@ -244,85 +330,98 @@ dp = dia_personal(mp, hoy.day)
 arc = arcano_semanal()
 pin = pinaculo_piramide(fecha_nac)
 
-st.markdown("### ✨ Tu lectura gratis")
+num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
-# 1) ESENCIA
-st.write(f"*Mi esencia — Número {es}*")
-st.write(LECTURA_GRATIS.get(es, ""))
+if calcular:
+    st.markdown("### ✨ Tu lectura resumida")
 
-# 2) NOMBRE COMPLETO (ENERGÍA DEL NOMBRE)555555555555555555555555555555555555555555
+    st.write(f"Mi esencia — Número {es}")
+    st.write(lectura_resumida(es))
 
-if nombre.strip():
-    num_nombre = numero_nombre(nombre)
+    st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
+    if num_nombre:
+        st.write(lectura_resumida(num_nombre))
+    else:
+        st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
+
+    st.write(f"Mi misión — Número {mis}")
+    st.write(lectura_resumida(mis))
+
+    st.write(f"Mi año personal ({hoy.year}) — Número {ap}")
+    st.write(lectura_resumida(ap))
+
+    st.write(f"Mi energía de hoy — Número {dp}")
+    st.write(lectura_resumida(dp))
+
+    st.write("Mi pináculo (pirámide completa)")
+    st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
+    st.write(pinaculo_micro(pin))
+
+    st.write(f"Arcano semanal — Número {arc}")
+    st.write(arcano_micro(arc))
+
+    # PDF Resumido
+    pdf_resumido = build_pdf_bytes(
+        f"{APP_TITLE} · Versión Resumida · {BRAND}",
+        [
+            ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
+            ("Mi esencia", f"Número {es}\n\n{lectura_resumida(es)}"),
+            ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
+            ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
+            ("Mi año personal", f"Número {ap}\n\n{lectura_resumida(ap)}"),
+            ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
+            ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
+            ("Arcano semanal", f"Número {arc}\n\n{arcano_micro(arc)}"),
+        ]
+    )
+
+    st.download_button(
+        "⬇️ Descargar PDF (Versión Resumida)",
+        data=pdf_resumido,
+        file_name=f"Lectura_Numerologica_Resumida_{BRAND}.pdf",
+        mime="application/pdf",
+    )
 else:
-    num_nombre = 0
-
-if num_nombre != 0:
-    st.write(f"Mi nombre completo — Número {num_nombre}")
-    st.write(LECTURA_GRATIS.get(num_nombre, ""))
-else:
-    st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
-
-st.write(f"*Mi misión — Número {mis}*")
-st.write(LECTURA_GRATIS.get(mis, ""))
-
-st.write(f"*Mi año personal ({hoy.year}) — Número {ap}*")
-st.write(LECTURA_GRATIS.get(ap, ""))
-
-st.write(f"*Mi energía de hoy — Número {dp}*")
-st.write(LECTURA_GRATIS.get(dp, ""))
-
-st.write("*Mi pináculo (pirámide completa)*")
-st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
-st.write(PINACULO_TEXTO_GRATIS)
-
-st.write(f"*Arcano semanal — Número {arc}*")
-st.write(ARCANOS_GRATIS.get(arc, ""))
-
-# PDF Gratis
-pdf_gratis = build_pdf_bytes(
-    f"{APP_TITLE} · Gratis",
-    [
-        ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}"),
-        ("Mi esencia", f"Número {es}\n\n{LECTURA_GRATIS.get(es, '')}"),
-        ("Mi nombre completo", f"Número {num_nombre}\n\n{LECTURA_GRATIS.get(num_nombre, '')}"),
-        ("Mi misión", f"Número {mis}\n\n{LECTURA_GRATIS.get(mis, '')}"),
-        ("Mi año personal", f"Número {ap}\n\n{LECTURA_GRATIS.get(ap, '')}"),
-        ("Mi energía de hoy", f"Número {dp}\n\n{LECTURA_GRATIS.get(dp, '')}"),
-        ("Mi pináculo (pirámide)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{PINACULO_TEXTO_GRATIS}"),
-        ("Arcano semanal", f"Número {arc}\n\n{ARCANOS_GRATIS.get(arc, '')}"),
-    ]
-)
-
-st.download_button(
-    "⬇️ Descargar PDF (Gratis)",
-    data=pdf_gratis,
-    file_name="Lectura_Numerologica_Gratis_Eugenia_Mistico.pdf",
-    mime="application/pdf",
-)
+    st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
 
 # =====================================================
-# BLOQUE PAGA (Premium)
+# BLOQUE VERSIÓN COMPLETA (con clave única)
 # =====================================================
 st.markdown("---")
-st.markdown("🔒 *Versión completa (PDF personalizado)*")
-st.write(
-    "Incluye interpretación profunda de tus números, ciclos y energía personal. "
-    "Disponible tras la consulta."
-)
+st.markdown("🔒 *Versión Completa (PDF personalizado)*")
+st.write("Desbloquea tu lectura completa con tu clave personal.")
 
-PASSWORD = os.getenv("APP_PASSWORD")
-clave = st.text_input("Introduce la clave para desbloquear la lectura completa", type="password")
-
-if not PASSWORD:
-    st.warning("No hay clave configurada en este equipo. Define APP_PASSWORD en tu PC.")
+APP_SECRET = os.getenv("APP_SECRET")  # secreto tuyo (solo tú)
+if not APP_SECRET:
+    st.warning("Falta APP_SECRET en este equipo. Define APP_SECRET para activar claves únicas.")
     st.stop()
 
-if clave != PASSWORD:
-    st.info("La lectura completa se desbloquea al realizar la compra.")
+# (Opcional) Panel admin para GENERAR la clave del cliente (solo si defines ADMIN_PIN)
+ADMIN_PIN = os.getenv("ADMIN_PIN")
+if ADMIN_PIN:
+    with st.expander("🔐 Panel de administración (solo Eugenia)"):
+        pin_ingresado = st.text_input("PIN admin", type="password").strip()
+        if pin_ingresado and pin_ingresado == ADMIN_PIN:
+            if nombre.strip():
+                st.code(generar_clave_unica(nombre, fecha_nac, APP_SECRET), language="text")
+                st.caption("Copia esta clave y envíasela al cliente (depende del nombre+fecha escritos arriba).")
+            else:
+                st.info("Escribe el nombre arriba para generar la clave.")
+
+# clave del cliente
+clave_ingresada = st.text_input("Introduce tu clave personal", type="password").strip().upper()
+
+if not nombre.strip():
+    st.info("Para validar tu clave, primero escribe tu nombre completo arriba.")
     st.stop()
 
-st.success("Versión paga desbloqueada ✅")
+clave_esperada = generar_clave_unica(nombre, fecha_nac, APP_SECRET)
+
+if clave_ingresada != clave_esperada:
+    st.info("Clave inválida. Verifica que tu nombre y fecha estén exactamente como en tu compra.")
+    st.stop()
+
+st.success("Versión completa desbloqueada ✅")
 
 # =====================================================
 # TEXTOS PROFUNDOS (3 párrafos)
@@ -366,7 +465,7 @@ def texto_arcano_profundo() -> str:
           "Su mensaje principal es simple: lo que estás viviendo tiene sentido, incluso si aún no lo entiendes completo.")
     p2 = ("El arquetipo señala un ajuste interno: una forma más madura de decidir, un cambio de perspectiva o una verdad que pide espacio. "
           "Si sientes tensión, no es castigo: es señal de que tu energía se está reordenando para avanzar con más autenticidad.")
-    p3 = ("La recomendación mística práctica es sostener presencia: menos impulsividad y más intención. "
+    p3 = ("La recomendación práctica es sostener presencia: menos impulsividad y más intención. "
           "Esta semana gana quien elige con calma, se escucha y actúa con coherencia. "
           "Cuando integras el mensaje, se abren oportunidades con menos desgaste.")
     return f"{p1}\n\n{p2}\n\n{p3}"
@@ -411,14 +510,14 @@ def compatibilidad_profunda(n1: int, n2: int) -> str:
           "cuando comparten espacio emocional. La atracción suele nacer de lo que se reconoce o se complementa.")
     p2 = (f"En esta combinación, se mezclan vibraciones ({a} y {b}) que pueden potenciarse si hay comunicación y acuerdos. "
           "El reto típico no es quererse, sino sostener el vínculo sin perder identidad ni caer en patrones repetidos.")
-    p3 = ("La clave mística práctica es simple: claridad + límites + ternura. Si ambos nombran necesidades y respetan ritmos, el vínculo crece. "
-          "Si no, se vuelve espejo de heridas. Úsenlo como conciencia: hablar a tiempo evita desgastes.")
+    p3 = ("La clave práctica es simple: claridad + límites + ternura. Si ambos nombran necesidades y respetan ritmos, el vínculo crece. "
+          "Si no, se vuelve espejo de heridas. Hablar a tiempo evita desgastes.")
     return f"{p1}\n\n{p2}\n\n{p3}"
 
 # =====================================================
-# UI – PAGA
+# UI – VERSIÓN COMPLETA
 # =====================================================
-st.markdown("## 💎 Lectura Paga (Profunda)")
+st.markdown("## 💎 Lectura Completa")
 
 st.markdown("### 1) Esencia")
 st.write(f"Número {es}")
@@ -458,20 +557,20 @@ st.write(pinaculo_profundo_texto(pin))
 
 st.markdown("### 10) Nombre profundo")
 if not nombre.strip():
-    st.warning("Para esta sección escribe tu nombre arriba (en la parte gratis).")
+    st.warning("Para esta sección escribe tu nombre arriba (en la parte resumida).")
     expr = alma = pers = 0
 else:
     expr = numero_expresion(nombre)
     alma = numero_alma(nombre)
     pers = numero_personalidad(nombre)
 
-    st.write(f"*Expresión (nombre completo): {expr}*")
+    st.write(f"Expresión (nombre completo): {expr}")
     st.write(parrafos_profundos(expr, "tu Expresión"))
 
-    st.write(f"*Alma (vocales): {alma}*")
+    st.write(f"Alma (vocales): {alma}")
     st.write(parrafos_profundos(alma, "tu Número del Alma"))
 
-    st.write(f"*Personalidad (consonantes): {pers}*")
+    st.write(f"Personalidad (consonantes): {pers}")
     st.write(parrafos_profundos(pers, "tu Personalidad"))
 
 st.markdown("### 11) Teléfono / DNI / Hogar")
@@ -512,7 +611,7 @@ with colc1:
     fecha_pareja = st.date_input(
         "Fecha de nacimiento de la pareja",
         min_value=date(1940, 1, 1),
-        max_value=date(2025, 12, 31),
+        max_value=date(2040, 12, 31),  # <- hasta 2040
         value=date(1990, 1, 1),
         key="pareja_fecha"
     )
@@ -527,9 +626,9 @@ if calcular_cmp and fecha_pareja:
     st.write(cmp_texto)
 
 # =====================================================
-# PDF PAGA (largo)
+# PDF COMPLETO (largo)
 # =====================================================
-secciones_paga = [
+secciones_completa = [
     ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
     ("Esencia", f"Número {es}\n\n{parrafos_profundos(es, 'tu Esencia')}"),
     ("Misión / Sendero", f"Número {mis}\n\n{parrafos_profundos(mis, 'tu Misión')}"),
@@ -543,9 +642,9 @@ secciones_paga = [
 ]
 
 if nombre.strip():
-    secciones_paga.append(("Nombre – Expresión", f"{expr}\n\n{parrafos_profundos(expr, 'tu Expresión')}"))
-    secciones_paga.append(("Nombre – Alma", f"{alma}\n\n{parrafos_profundos(alma, 'tu Número del Alma')}"))
-    secciones_paga.append(("Nombre – Personalidad", f"{pers}\n\n{parrafos_profundos(pers, 'tu Personalidad')}"))
+    secciones_completa.append(("Nombre – Expresión", f"{expr}\n\n{parrafos_profundos(expr, 'tu Expresión')}"))
+    secciones_completa.append(("Nombre – Alma", f"{alma}\n\n{parrafos_profundos(alma, 'tu Número del Alma')}"))
+    secciones_completa.append(("Nombre – Personalidad", f"{pers}\n\n{parrafos_profundos(pers, 'tu Personalidad')}"))
 
 extras_lines = []
 if telefono.strip(): extras_lines.append(f"Teléfono: {telefono} → {tel_num}")
@@ -554,22 +653,21 @@ if apto.strip(): extras_lines.append(f"Apartamento/Casa: {apto} → {apto_num}")
 if edificio.strip(): extras_lines.append(f"Edificio: {edificio} → {edif_num}")
 if hogar_sintesis: extras_lines.append(f"Síntesis hogar → {hogar_sintesis}")
 if extras_lines:
-    secciones_paga.append(("Extras", "\n".join(extras_lines)))
+    secciones_completa.append(("Extras", "\n".join(extras_lines)))
 
 if cmp_texto:
-    secciones_paga.append(("Compatibilidad", cmp_texto))
+    secciones_completa.append(("Compatibilidad", cmp_texto))
 
-pdf_paga = build_pdf_bytes(
-    f"{APP_TITLE} · Premium",
-    secciones_paga
+pdf_completa = build_pdf_bytes(
+    f"{APP_TITLE} · Versión Completa · {BRAND}",
+    secciones_completa
 )
 
 st.download_button(
-    "⬇️ Descargar PDF (Paga)",
-    data=pdf_paga,
-    file_name="Lectura_Numerologica_Paga_Eugenia_Mistico.pdf",
+    "⬇️ Descargar PDF (Versión Completa)",
+    data=pdf_completa,
+    file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
     mime="application/pdf",
 )
 
-st.caption("Lectura simbólica e interpretativa · Eugenia.Mystico · Premium")
-
+st.caption(f"{BRAND} · Lectura Numerológica")
