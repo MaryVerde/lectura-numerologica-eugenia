@@ -14,8 +14,28 @@ from reportlab.pdfgen import canvas
 # =====================================================
 # CONFIGURACIÓN GENERAL
 # =====================================================
+
+# =====================================================
+# ADMIN – CONTADOR DE USO (VERSIÓN RESUMIDA)
+# =====================================================
+COUNTER_FILE = "contador_resumida.txt"
+
+def leer_contador():
+    try:
+        with open(COUNTER_FILE, "r", encoding="utf-8") as f:
+            return int(f.read().strip())
+    except:
+        return 0
+
+def incrementar_contador():
+    total = leer_contador() + 1
+    with open(COUNTER_FILE, "w", encoding="utf-8") as f:
+        f.write(str(total))
+    return total
+
+
 APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Mistikos"  # <- forma ÚNICA (sin acento, con K)
+BRAND = "Eugenia.Mystikos"  # <- forma ÚNICA (sin acento, con K)
 
 st.set_page_config(
     page_title=f"{APP_TITLE} · {BRAND}",
@@ -275,26 +295,27 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date, secret: str) -> s
 # =====================================================
 # UI – VERSIÓN RESUMIDA (con botón)
 # =====================================================
-st.subheader("✨ Versión Resumida")
-st.markdown("""
+st.markdown(
+    """
 Esta lectura no es una predicción ni una promesa externa.  
-Es una *orientación energética consciente*, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
-Cada número refleja una *frecuencia*, y cada frecuencia describe una forma de transitar la vida en este momento.
+Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
+Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
 
-Aquí no buscamos decirte qué va a pasar, sino ayudarte a *comprender qué energía está disponible para ti ahora*, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
-La numerología, cuando se usa con conciencia, no limita: *ordena, revela y enfoca*.
+Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
+La numerología, cuando se usa con consciencia, no limita: *ordena, revela y enfoca*.
 
-Esta versión resumida te muestra *el núcleo de tu vibración*: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
+Esta versión resumida te muestra el núcleo de tu vibración: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
 Es una lectura clara y simbólica, pensada para que puedas *reconocerte*, no para que dependas de ella.
 
 Si algo de lo que lees resuena, no es casualidad: la energía no grita, *reconoce*.  
 Y cuando reconoces, recuperas poder personal.
 
-La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a *recordar con claridad*, sostener tu rumbo y elegir con presencia.
+La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a recordar con claridad, sostener tu rumbo y elegir con presencia.
 
-✨ *Esta lectura no te quita responsabilidad: te la devuelve.*  
+✨ Esta lectura no te quita responsabilidad: te la devuelve.  
 Tómala como una brújula, no como un destino.
 """)
+
 
 col1, col2 = st.columns(2)
 with col1:
@@ -309,7 +330,7 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Eugenia.Mistikos"
+        placeholder="Ej: Eugenia.Mystikos"
     )
 
 
@@ -333,6 +354,7 @@ pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
 if calcular:
+    total_usos = incrementar_contador()
     st.markdown("### ✨ Tu lectura resumida")
 
     st.write(f"Mi esencia — Número {es}")
