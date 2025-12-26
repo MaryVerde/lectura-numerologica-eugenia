@@ -12,11 +12,27 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
 # =====================================================
-# CONFIGURACIÓN GENERAL
+# SECRETOS (STREAMLIT CLOUD + LOCAL)
 # =====================================================
+def get_secret(key: str, default=None):
+    # 1) Streamlit Secrets
+    try:
+        if hasattr(st, "secrets") and key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    # 2) Variables de entorno (local)
+    return os.getenv(key, default)
+
+APP_SECRET = get_secret("APP_SECRET")
+ADMIN_PIN = get_secret("ADMIN_PIN")
+
+if not APP_SECRET:
+    st.error("❌ Falta APP_SECRET. Ve a Settings → Secrets y agrega APP_SECRET.")
+    st.stop()
 
 # =====================================================
-# ADMIN – CONTADOR DE USO (VERSIÓN RESUMIDA)
+# CONTADOR (INTERNO) - SOLO PANEL ADMIN
 # =====================================================
 COUNTER_FILE = "contador_resumida.txt"
 
@@ -29,13 +45,19 @@ def leer_contador():
 
 def incrementar_contador():
     total = leer_contador() + 1
-    with open(COUNTER_FILE, "w", encoding="utf-8") as f:
-        f.write(str(total))
+    try:
+        with open(COUNTER_FILE, "w", encoding="utf-8") as f:
+            f.write(str(total))
+    except:
+        # En Streamlit Cloud a veces el FS es de solo lectura; si pasa, igual no mostramos nada al cliente.
+        pass
     return total
 
-
+# =====================================================
+# CONFIGURACIÓN GENERAL
+# =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Mystikos"  # <- forma ÚNICA (sin acento, con K)
+BRAND = "Eugenia.Mystikos"
 
 st.set_page_config(
     page_title=f"{APP_TITLE} · {BRAND}",
@@ -45,7 +67,7 @@ st.set_page_config(
 
 st.title(f"{APP_TITLE} · {BRAND}")
 st.markdown(
-    f"*{BRAND}*  \n"
+    f"{BRAND}  \n"
     "Versión Resumida · Interpretación completa en versión completa (PDF personalizado)"
 )
 
@@ -147,8 +169,7 @@ def pinaculo_piramide(fecha: date) -> dict:
     return {"base": (p1, p2, p3), "medio": (p4, p5), "cima": p6}
 
 # =====================================================
-# TEXTOS RESUMIDOS (1 PÁRRAFO)
-# (NO te los cambio: están como tus resumidos)
+# TEXTOS RESUMIDOS (1 párrafo)
 # =====================================================
 LECTURA_RESUMIDA = {
     1:  "Esta vibración marca un inicio real: te empuja a elegir, actuar y abrir camino sin depender de la aprobación externa. La vida te pide claridad en tus decisiones y firmeza para sostener tu identidad. Avanzas cuando alineas intención y acción, dando pasos pequeños pero constantes que construyen una base sólida.",
@@ -169,7 +190,7 @@ def lectura_resumida(num: int) -> str:
     return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
 # =====================================================
-# PINÁCULO + ARCANO (micro-interpretación resumida)
+# PINÁCULO + ARCANO (micro)
 # =====================================================
 def pinaculo_micro(pin: dict) -> str:
     b1, b2, b3 = pin["base"]
@@ -210,7 +231,7 @@ def arcano_micro(arc: int) -> str:
     return ARCANOS_RESUMIDOS.get(arc, "Mensaje no disponible.")
 
 # =====================================================
-# PDF helper (sirve para resumida y completa)
+# PDF helper
 # =====================================================
 def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
     buffer = BytesIO()
@@ -260,69 +281,51 @@ def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
     return buffer.read()
 
 # =====================================================
-# CLAVES ÚNICAS (deben estar ANTES de usarse)
+# CLAVE (estable, reutilizable infinitamente)
 # =====================================================
 def normalizar_clave_nombre(txt: str) -> str:
-    """Normaliza para generar claves (sin acentos, sin signos, en mayúsculas)."""
     txt = unicodedata.normalize("NFD", str(txt))
     txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
-    txt = re.sub(r"[^A-Za-z\s]", " ", txt)   # deja letras y espacios
+    txt = re.sub(r"[^A-Za-z\s]", " ", txt)
     txt = re.sub(r"\s+", " ", txt).strip().upper()
     return txt
 
 def primer_nombre_y_apellido(nombre_completo: str) -> str:
-    """
-    Toma PRIMER NOMBRE y PRIMER APELLIDO.
-    Ej: 'Luis Juan Pérez García' -> 'LUIS GARCIA' (último token como apellido)
-    """
     n = normalizar_clave_nombre(nombre_completo)
     parts = n.split()
     if len(parts) >= 2:
         return f"{parts[0]} {parts[-1]}"
     return n
 
-def generar_clave_unica(nombre_completo: str, fecha_nac: date, secret: str) -> str:
-    """
-    Clave tipo: EM-7A92-3FQK (ejemplo)
-    Depende de: primer_nombre+apellido + fecha + secreto (no adivinable).
-    """
+def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     base_nombre = primer_nombre_y_apellido(nombre_completo)
     payload = f"{base_nombre}|{fecha_nac.isoformat()}".encode("utf-8")
-    digest = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
-    core = digest[:12]  # 12 hex
+    digest = hmac.new(APP_SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
+    core = digest[:12]
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}"
 
 # =====================================================
-# UI – VERSIÓN RESUMIDA (con botón)
+# TEXTO INTRO
 # =====================================================
 st.markdown(
     """
 Esta lectura no es una predicción ni una promesa externa.  
-Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
-Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
-
-Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
-La numerología, cuando se usa con consciencia, no limita: *ordena, revela y enfoca*.
-
-Esta versión resumida te muestra el núcleo de tu vibración: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
-Es una lectura clara y simbólica, pensada para que puedas *reconocerte*, no para que dependas de ella.
-
-Si algo de lo que lees resuena, no es casualidad: la energía no grita, *reconoce*.  
-Y cuando reconoces, recuperas poder personal.
-
-La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a recordar con claridad, sostener tu rumbo y elegir con presencia.
+Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.
 
 ✨ Esta lectura no te quita responsabilidad: te la devuelve.  
 Tómala como una brújula, no como un destino.
-""")
+"""
+)
 
-
+# =====================================================
+# INPUTS
+# =====================================================
 col1, col2 = st.columns(2)
 with col1:
     fecha_nac = st.date_input(
         "Fecha de nacimiento",
         min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),  # <- hasta 2040
+        max_value=date(2040, 12, 31),
         value=date(1990, 1, 1),
     )
 with col2:
@@ -330,15 +333,31 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Eugenia.Mystikos"
+        placeholder="Ej: Ana Pérez"
     )
 
-
 calcular = st.button("✨ Ver mi lectura ahora")
-
 hoy = date.today()
 
-# calcular siempre, pero mostrar solo al presionar botón
+# =====================================================
+# PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
+# =====================================================
+if ADMIN_PIN:
+    with st.expander("🔐 Administración", expanded=False):
+        pin_ingresado = st.text_input("PIN de administración", type="password")
+        if pin_ingresado:
+            if pin_ingresado == ADMIN_PIN:
+                st.success("Acceso concedido ✅")
+                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
+                if nombre.strip():
+                    st.caption("Clave del cliente (según nombre+fecha actuales):")
+                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
+            else:
+                st.error("PIN incorrecto")
+
+# =====================================================
+# CÁLCULOS (se calculan siempre)
+# =====================================================
 es = esencia(fecha_nac)
 mis = sendero_vida(fecha_nac)
 vp = vida_pasada(fecha_nac)
@@ -350,35 +369,16 @@ dp = dia_personal(mp, hoy.day)
 
 arc = arcano_semanal()
 pin = pinaculo_piramide(fecha_nac)
-
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
-
+# =====================================================
+# MOSTRAR RESUMIDA SOLO AL PRESIONAR BOTÓN
+# =====================================================
 if calcular:
-    total_usos = incrementar_contador()
- # 👁️ Vista interna solo para Eugenia
-    if os.getenv("ADMIN_VIEW") == "1":
-        st.markdown(
-            f"""
-            <div style="
-                margin-top:30px;
-                padding:12px;
-                font-size:12px;
-                color:#666;
-                font-style:italic;
-                border-top:1px dashed #ddd;
-                text-align:center;
-            ">
-            🌙 Uso interno · Registro del alma  
-            <br>
-            Esta lectura ha sido activada <b>{total_usos}</b> veces.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    incrementar_contador()
 
     st.markdown("### ✨ Tu lectura resumida")
-    
+
     st.write(f"Mi esencia — Número {es}")
     st.write(lectura_resumida(es))
 
@@ -429,289 +429,149 @@ else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
 
 # =====================================================
-# BLOQUE VERSIÓN COMPLETA (con clave única)
+# VERSIÓN COMPLETA (CLIENTE) - BLOQUEO POR CLAVE
 # =====================================================
 st.markdown("---")
 st.markdown("🔒 *Versión Completa (PDF personalizado)*")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
-APP_SECRET = os.getenv("APP_SECRET")  # secreto tuyo (solo tú)
-if not APP_SECRET:
-    st.warning("Falta APP_SECRET en este equipo. Define APP_SECRET para activar claves únicas.")
-    st.stop()
-
-# (Opcional) Panel admin para GENERAR la clave del cliente (solo si defines ADMIN_PIN)
-ADMIN_PIN = os.getenv("ADMIN_PIN")
-if ADMIN_PIN:
-    with st.expander("🔐 Panel de administración (solo Eugenia)"):
-        pin_ingresado = st.text_input("PIN admin", type="password").strip()
-        if pin_ingresado and pin_ingresado == ADMIN_PIN:
-            if nombre.strip():
-                st.code(generar_clave_unica(nombre, fecha_nac, APP_SECRET), language="text")
-                st.caption("Copia esta clave y envíasela al cliente (depende del nombre+fecha escritos arriba).")
-            else:
-                st.info("Escribe el nombre arriba para generar la clave.")
-
-# clave del cliente
 clave_ingresada = st.text_input("Introduce tu clave personal", type="password").strip().upper()
 
-if not nombre.strip():
-    st.info("Para validar tu clave, primero escribe tu nombre completo arriba.")
-    st.stop()
+if clave_ingresada:
+    if not nombre.strip():
+        st.info("Para validar tu clave, primero escribe tu nombre completo arriba.")
+        st.stop()
 
-clave_esperada = generar_clave_unica(nombre, fecha_nac, APP_SECRET)
+    clave_esperada = generar_clave_unica(nombre, fecha_nac)
 
-if clave_ingresada != clave_esperada:
-    st.info("Clave inválida. Verifica que tu nombre y fecha estén exactamente como en tu compra.")
-    st.stop()
+    if clave_ingresada != clave_esperada:
+        st.error("Clave inválida. Verifica que tu nombre y fecha estén exactamente como en tu compra.")
+        st.stop()
 
-st.success("Versión completa desbloqueada ✅")
+    st.success("Versión completa desbloqueada ✅")
 
-# =====================================================
-# TEXTOS PROFUNDOS (3 párrafos)
-# =====================================================
-NUM_RASGOS = {
-    1: ("iniciativa", "afirmación", "dirección"),
-    2: ("sensibilidad", "cooperación", "armonía"),
-    3: ("expresión", "creatividad", "comunicación"),
-    4: ("estructura", "disciplina", "constancia"),
-    5: ("cambio", "libertad", "movimiento"),
-    6: ("cuidado", "responsabilidad", "vínculos"),
-    7: ("introspección", "análisis", "intuición"),
-    8: ("logro", "poder personal", "materialización"),
-    9: ("cierre", "compasión", "integración"),
-    11: ("inspiración", "intuición elevada", "visión"),
-    22: ("construcción", "visión práctica", "impacto"),
-    33: ("amor consciente", "servicio", "sabiduría emocional"),
-}
+    # =====================================================
+    # TEXTOS PROFUNDOS (3 párrafos)
+    # =====================================================
+    NUM_RASGOS = {
+        1: ("iniciativa", "afirmación", "dirección"),
+        2: ("sensibilidad", "cooperación", "armonía"),
+        3: ("expresión", "creatividad", "comunicación"),
+        4: ("estructura", "disciplina", "constancia"),
+        5: ("cambio", "libertad", "movimiento"),
+        6: ("cuidado", "responsabilidad", "vínculos"),
+        7: ("introspección", "análisis", "intuición"),
+        8: ("logro", "poder personal", "materialización"),
+        9: ("cierre", "compasión", "integración"),
+        11: ("inspiración", "intuición elevada", "visión"),
+        22: ("construcción", "visión práctica", "impacto"),
+        33: ("amor consciente", "servicio", "sabiduría emocional"),
+    }
 
-def parrafos_profundos(num: int, titulo: str) -> str:
-    a, b, c = NUM_RASGOS.get(num, ("equilibrio", "conciencia", "claridad"))
-    p1 = (
-        f"En {titulo}, tu vibración muestra un núcleo de {a} que se activa como brújula interna. "
-        f"No es solo una cualidad: es una forma de percibir la vida y responder a ella. "
-        f"Cuando esta energía está alineada, te sientes más {b}, más capaz de sostener decisiones y avanzar con sentido."
+    def parrafos_profundos(num: int, titulo: str) -> str:
+        a, b, c = NUM_RASGOS.get(num, ("equilibrio", "conciencia", "claridad"))
+        p1 = (
+            f"En {titulo}, tu vibración muestra un núcleo de {a} que se activa como brújula interna. "
+            f"No es solo una cualidad: es una forma de percibir la vida y responder a ella. "
+            f"Cuando esta energía está alineada, te sientes más {b}, más capaz de sostener decisiones y avanzar con sentido."
+        )
+        p2 = (
+            f"El aprendizaje aparece cuando la energía se exagera o se contrae: allí surge el reto. "
+            f"En este número, la sombra suele mostrarse como tensión entre lo que deseas y lo que realmente te nutre. "
+            f"Tu crecimiento no está en forzar resultados, sino en refinar tu {c}: elegir desde la verdad, no desde la presión."
+        )
+        p3 = (
+            f"Tu llave práctica es convertir esta vibración en acción concreta: una decisión clara, un límite sano o un hábito sostenido. "
+            f"Lo místico se vuelve real cuando se vuelve cotidiano: orden, enfoque e intención. "
+            f"Si actúas con coherencia, esta etapa te devuelve confianza, dirección y un sentimiento real de avance."
+        )
+        return f"{p1}\n\n{p2}\n\n{p3}"
+
+    def texto_arcano_profundo() -> str:
+        p1 = ("Esta semana trae un arquetipo que funciona como espejo: no viene a asustarte, viene a mostrarte dónde estás creciendo. "
+              "Su mensaje principal es simple: lo que estás viviendo tiene sentido, incluso si aún no lo entiendes completo.")
+        p2 = ("El arquetipo señala un ajuste interno: una forma más madura de decidir, un cambio de perspectiva o una verdad que pide espacio. "
+              "Si sientes tensión, no es castigo: es señal de que tu energía se está reordenando para avanzar con más autenticidad.")
+        p3 = ("La recomendación práctica es sostener presencia: menos impulsividad y más intención. "
+              "Esta semana gana quien elige con calma, se escucha y actúa con coherencia. "
+              "Cuando integras el mensaje, se abren oportunidades con menos desgaste.")
+        return f"{p1}\n\n{p2}\n\n{p3}"
+
+    def pinaculo_profundo_texto(pin: dict) -> str:
+        p1 = ("Tu pináculo funciona como mapa de etapas: muestra cómo se construye tu fuerza interna a través de experiencias que te forman. "
+              "La base habla de las lecciones que te empujan a madurar desde lo cotidiano y de cómo respondes cuando la vida te exige crecer.")
+        p2 = ("El nivel medio refleja el punto donde tu carácter se vuelve más consciente: allí aprendes a sostener decisiones, a poner límites y a elegir con coherencia. "
+              "Cuando te alineas, los ciclos se vuelven aliados en vez de obstáculos.")
+        p3 = ("La cima es la síntesis: la versión de ti que emerge cuando integras lecciones sin resentimiento. "
+              "La clave es transformar aprendizaje en hábito: palabras claras, acciones consistentes y rutinas que te sostengan. "
+              "Así tu pirámide se vuelve dirección, confianza y estabilidad emocional.")
+        return f"{p1}\n\n{p2}\n\n{p3}"
+
+    # =====================================================
+    # UI – VERSIÓN COMPLETA
+    # =====================================================
+    st.markdown("## 💎 Lectura Completa")
+
+    st.markdown("### 1) Esencia")
+    st.write(f"Número {es}")
+    st.write(parrafos_profundos(es, "tu Esencia"))
+
+    st.markdown("### 2) Misión / Sendero de vida")
+    st.write(f"Número {mis}")
+    st.write(parrafos_profundos(mis, "tu Misión"))
+
+    st.markdown("### 3) Vida pasada")
+    st.write(f"Número {vp}")
+    st.write(parrafos_profundos(vp, "tu Vida Pasada"))
+
+    st.markdown("### 4) Año personal")
+    st.write(f"Número {ap}")
+    st.write(parrafos_profundos(ap, "tu Año Personal"))
+
+    st.markdown("### 5) Mes personal")
+    st.write(f"Número {mp}")
+    st.write(parrafos_profundos(mp, "tu Mes Personal"))
+
+    st.markdown("### 6) Semana personal")
+    st.write(f"Número {sp}")
+    st.write(parrafos_profundos(sp, "tu Semana Personal"))
+
+    st.markdown("### 7) Día personal")
+    st.write(f"Número {dp}")
+    st.write(parrafos_profundos(dp, "tu Día Personal"))
+
+    st.markdown("### 8) Arcano mayor de la semana")
+    st.write(f"Arcano {arc}")
+    st.write(texto_arcano_profundo())
+
+    st.markdown("### 9) Pináculo (pirámide completa)")
+    st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
+    st.write(pinaculo_profundo_texto(pin))
+
+    # PDF COMPLETO
+    secciones_completa = [
+        ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
+        ("Esencia", f"Número {es}\n\n{parrafos_profundos(es, 'tu Esencia')}"),
+        ("Misión / Sendero", f"Número {mis}\n\n{parrafos_profundos(mis, 'tu Misión')}"),
+        ("Vida pasada", f"Número {vp}\n\n{parrafos_profundos(vp, 'tu Vida Pasada')}"),
+        ("Año personal", f"Número {ap}\n\n{parrafos_profundos(ap, 'tu Año Personal')}"),
+        ("Mes personal", f"Número {mp}\n\n{parrafos_profundos(mp, 'tu Mes Personal')}"),
+        ("Semana personal", f"Número {sp}\n\n{parrafos_profundos(sp, 'tu Semana Personal')}"),
+        ("Día personal", f"Número {dp}\n\n{parrafos_profundos(dp, 'tu Día Personal')}"),
+        ("Arcano semanal", f"Arcano {arc}\n\n{texto_arcano_profundo()}"),
+        ("Pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_profundo_texto(pin)}"),
+    ]
+
+    pdf_completa = build_pdf_bytes(
+        f"{APP_TITLE} · Versión Completa · {BRAND}",
+        secciones_completa
     )
-    p2 = (
-        f"El aprendizaje aparece cuando la energía se exagera o se contrae: allí surge el reto. "
-        f"En este número, la sombra suele mostrarse como tensión entre lo que deseas y lo que realmente te nutre. "
-        f"Tu crecimiento no está en forzar resultados, sino en refinar tu {c}: elegir desde la verdad, no desde la presión."
+
+    st.download_button(
+        "⬇️ Descargar PDF (Versión Completa)",
+        data=pdf_completa,
+        file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
+        mime="application/pdf",
     )
-    p3 = (
-        f"Tu llave práctica es convertir esta vibración en acción concreta: una decisión clara, un límite sano o un hábito sostenido. "
-        f"Lo místico se vuelve real cuando se vuelve cotidiano: orden, enfoque e intención. "
-        f"Si actúas con coherencia, esta etapa te devuelve confianza, dirección y un sentimiento real de avance."
-    )
-    return f"{p1}\n\n{p2}\n\n{p3}"
-
-def texto_arcano_profundo() -> str:
-    p1 = ("Esta semana trae un arquetipo que funciona como espejo: no viene a asustarte, viene a mostrarte dónde estás creciendo. "
-          "Su mensaje principal es simple: lo que estás viviendo tiene sentido, incluso si aún no lo entiendes completo.")
-    p2 = ("El arquetipo señala un ajuste interno: una forma más madura de decidir, un cambio de perspectiva o una verdad que pide espacio. "
-          "Si sientes tensión, no es castigo: es señal de que tu energía se está reordenando para avanzar con más autenticidad.")
-    p3 = ("La recomendación práctica es sostener presencia: menos impulsividad y más intención. "
-          "Esta semana gana quien elige con calma, se escucha y actúa con coherencia. "
-          "Cuando integras el mensaje, se abren oportunidades con menos desgaste.")
-    return f"{p1}\n\n{p2}\n\n{p3}"
-
-def pinaculo_profundo_texto(pin: dict) -> str:
-    p1 = ("Tu pináculo funciona como mapa de etapas: muestra cómo se construye tu fuerza interna a través de experiencias que te forman. "
-          "La base habla de las lecciones que te empujan a madurar desde lo cotidiano y de cómo respondes cuando la vida te exige crecer.")
-    p2 = ("El nivel medio refleja el punto donde tu carácter se vuelve más consciente: allí aprendes a sostener decisiones, a poner límites y a elegir con coherencia. "
-          "Cuando te alineas, los ciclos se vuelven aliados en vez de obstáculos.")
-    p3 = ("La cima es la síntesis: la versión de ti que emerge cuando integras lecciones sin resentimiento. "
-          "La clave es transformar aprendizaje en hábito: palabras claras, acciones consistentes y rutinas que te sostengan. "
-          "Así tu pirámide se vuelve dirección, confianza y estabilidad emocional.")
-    return f"{p1}\n\n{p2}\n\n{p3}"
-
-# =====================================================
-# NOMBRE PROFUNDO (alma / expresión / personalidad)
-# =====================================================
-def vocales(nombre: str) -> str:
-    n = normalizar_texto(nombre)
-    return "".join(ch for ch in n if ch in "AEIOU")
-
-def consonantes(nombre: str) -> str:
-    n = normalizar_texto(nombre)
-    return "".join(ch for ch in n if ch.isalpha() and ch not in "AEIOU")
-
-def numero_alma(nombre: str) -> int:
-    return numero_nombre(vocales(nombre)) if nombre.strip() else 0
-
-def numero_expresion(nombre: str) -> int:
-    return numero_nombre(nombre) if nombre.strip() else 0
-
-def numero_personalidad(nombre: str) -> int:
-    return numero_nombre(consonantes(nombre)) if nombre.strip() else 0
-
-# =====================================================
-# COMPATIBILIDAD (3 párrafos)
-# =====================================================
-def compatibilidad_profunda(n1: int, n2: int) -> str:
-    a = reducir_numero(n1 if n1 not in MASTER else sum(int(d) for d in str(n1)))
-    b = reducir_numero(n2 if n2 not in MASTER else sum(int(d) for d in str(n2)))
-    p1 = ("La compatibilidad no es destino: es dinámica. Observamos cómo se encuentran dos ritmos internos y qué aprendizaje aparece "
-          "cuando comparten espacio emocional. La atracción suele nacer de lo que se reconoce o se complementa.")
-    p2 = (f"En esta combinación, se mezclan vibraciones ({a} y {b}) que pueden potenciarse si hay comunicación y acuerdos. "
-          "El reto típico no es quererse, sino sostener el vínculo sin perder identidad ni caer en patrones repetidos.")
-    p3 = ("La clave práctica es simple: claridad + límites + ternura. Si ambos nombran necesidades y respetan ritmos, el vínculo crece. "
-          "Si no, se vuelve espejo de heridas. Hablar a tiempo evita desgastes.")
-    return f"{p1}\n\n{p2}\n\n{p3}"
-
-# =====================================================
-# UI – VERSIÓN COMPLETA
-# =====================================================
-st.markdown("## 💎 Lectura Completa")
-
-st.markdown("### 1) Esencia")
-st.write(f"Número {es}")
-st.write(parrafos_profundos(es, "tu Esencia"))
-
-st.markdown("### 2) Misión / Sendero de vida")
-st.write(f"Número {mis}")
-st.write(parrafos_profundos(mis, "tu Misión"))
-
-st.markdown("### 3) Vida pasada")
-st.write(f"Número {vp}")
-st.write(parrafos_profundos(vp, "tu Vida Pasada"))
-
-st.markdown("### 4) Año personal")
-st.write(f"Número {ap}")
-st.write(parrafos_profundos(ap, "tu Año Personal"))
-
-st.markdown("### 5) Mes personal")
-st.write(f"Número {mp}")
-st.write(parrafos_profundos(mp, "tu Mes Personal"))
-
-st.markdown("### 6) Semana personal")
-st.write(f"Número {sp}")
-st.write(parrafos_profundos(sp, "tu Semana Personal"))
-
-st.markdown("### 7) Día personal")
-st.write(f"Número {dp}")
-st.write(parrafos_profundos(dp, "tu Día Personal"))
-
-st.markdown("### 8) Arcano mayor de la semana")
-st.write(f"Arcano {arc}")
-st.write(texto_arcano_profundo())
-
-st.markdown("### 9) Pináculo (pirámide completa)")
-st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
-st.write(pinaculo_profundo_texto(pin))
-
-st.markdown("### 10) Nombre profundo")
-if not nombre.strip():
-    st.warning("Para esta sección escribe tu nombre arriba (en la parte resumida).")
-    expr = alma = pers = 0
-else:
-    expr = numero_expresion(nombre)
-    alma = numero_alma(nombre)
-    pers = numero_personalidad(nombre)
-
-    st.write(f"Expresión (nombre completo): {expr}")
-    st.write(parrafos_profundos(expr, "tu Expresión"))
-
-    st.write(f"Alma (vocales): {alma}")
-    st.write(parrafos_profundos(alma, "tu Número del Alma"))
-
-    st.write(f"Personalidad (consonantes): {pers}")
-    st.write(parrafos_profundos(pers, "tu Personalidad"))
-
-st.markdown("### 11) Teléfono / DNI / Hogar")
-telefono = st.text_input("Teléfono (opcional)", value="")
-dni = st.text_input("Cédula / DNI (opcional)", value="")
-apto = st.text_input("Apartamento / casa (opcional)", value="")
-edificio = st.text_input("Nombre del edificio (opcional)", value="", max_chars=40)
-
-tel_num = sumar_digitos_texto(telefono) if telefono.strip() else 0
-dni_num = sumar_digitos_texto(dni) if dni.strip() else 0
-apto_num = numero_apto(apto) if apto.strip() else 0
-edif_num = numero_nombre(edificio) if edificio.strip() else 0
-hogar_sintesis = reducir_numero(apto_num + edif_num) if (apto.strip() and edificio.strip()) else 0
-
-if telefono.strip():
-    st.write(f"Teléfono: {tel_num}")
-    st.write(parrafos_profundos(tel_num, "tu Comunicación (Teléfono)"))
-
-if dni.strip():
-    st.write(f"DNI: {dni_num}")
-    st.write(parrafos_profundos(dni_num, "tu Identidad Numérica (DNI)"))
-
-if apto.strip():
-    st.write(f"Apartamento/Casa: {apto_num}")
-    st.write(parrafos_profundos(apto_num, "tu Espacio (Apartamento/Casa)"))
-
-if edificio.strip():
-    st.write(f"Edificio: {edif_num}")
-    st.write(parrafos_profundos(edif_num, "tu Entorno (Edificio)"))
-
-if hogar_sintesis:
-    st.write(f"Síntesis del hogar: {hogar_sintesis}")
-    st.write(parrafos_profundos(hogar_sintesis, "la Síntesis del Hogar"))
-
-st.markdown("### 12) Compatibilidad")
-colc1, colc2 = st.columns(2)
-with colc1:
-    fecha_pareja = st.date_input(
-        "Fecha de nacimiento de la pareja",
-        min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),  # <- hasta 2040
-        value=date(1990, 1, 1),
-        key="pareja_fecha"
-    )
-with colc2:
-    calcular_cmp = st.checkbox("Calcular compatibilidad", value=True)
-
-cmp_texto = ""
-if calcular_cmp and fecha_pareja:
-    sv_p = sendero_vida(fecha_pareja)
-    st.write(f"Tu sendero: {mis} · Sendero pareja: {sv_p}")
-    cmp_texto = compatibilidad_profunda(mis, sv_p)
-    st.write(cmp_texto)
-
-# =====================================================
-# PDF COMPLETO (largo)
-# =====================================================
-secciones_completa = [
-    ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
-    ("Esencia", f"Número {es}\n\n{parrafos_profundos(es, 'tu Esencia')}"),
-    ("Misión / Sendero", f"Número {mis}\n\n{parrafos_profundos(mis, 'tu Misión')}"),
-    ("Vida pasada", f"Número {vp}\n\n{parrafos_profundos(vp, 'tu Vida Pasada')}"),
-    ("Año personal", f"Número {ap}\n\n{parrafos_profundos(ap, 'tu Año Personal')}"),
-    ("Mes personal", f"Número {mp}\n\n{parrafos_profundos(mp, 'tu Mes Personal')}"),
-    ("Semana personal", f"Número {sp}\n\n{parrafos_profundos(sp, 'tu Semana Personal')}"),
-    ("Día personal", f"Número {dp}\n\n{parrafos_profundos(dp, 'tu Día Personal')}"),
-    ("Arcano semanal", f"Arcano {arc}\n\n{texto_arcano_profundo()}"),
-    ("Pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_profundo_texto(pin)}"),
-]
-
-if nombre.strip():
-    secciones_completa.append(("Nombre – Expresión", f"{expr}\n\n{parrafos_profundos(expr, 'tu Expresión')}"))
-    secciones_completa.append(("Nombre – Alma", f"{alma}\n\n{parrafos_profundos(alma, 'tu Número del Alma')}"))
-    secciones_completa.append(("Nombre – Personalidad", f"{pers}\n\n{parrafos_profundos(pers, 'tu Personalidad')}"))
-
-extras_lines = []
-if telefono.strip(): extras_lines.append(f"Teléfono: {telefono} → {tel_num}")
-if dni.strip(): extras_lines.append(f"DNI: {dni} → {dni_num}")
-if apto.strip(): extras_lines.append(f"Apartamento/Casa: {apto} → {apto_num}")
-if edificio.strip(): extras_lines.append(f"Edificio: {edificio} → {edif_num}")
-if hogar_sintesis: extras_lines.append(f"Síntesis hogar → {hogar_sintesis}")
-if extras_lines:
-    secciones_completa.append(("Extras", "\n".join(extras_lines)))
-
-if cmp_texto:
-    secciones_completa.append(("Compatibilidad", cmp_texto))
-
-pdf_completa = build_pdf_bytes(
-    f"{APP_TITLE} · Versión Completa · {BRAND}",
-    secciones_completa
-)
-
-st.download_button(
-    "⬇️ Descargar PDF (Versión Completa)",
-    data=pdf_completa,
-    file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
-    mime="application/pdf",
-)
 
 st.caption(f"{BRAND} · Lectura Numerológica")
