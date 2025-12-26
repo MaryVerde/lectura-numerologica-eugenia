@@ -345,7 +345,7 @@ with col2:
         "Nombre completo (máx. 40 caracteres)",
         max_chars=40,
         value="",
-        placeholder="Ej: Ana Pérez"
+        placeholder="Ej: Eugenia Mystikos"
     )
 
 calcular = st.button("✨ Ver mi lectura ahora")
@@ -587,4 +587,5 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
 
