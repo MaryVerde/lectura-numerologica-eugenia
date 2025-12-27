@@ -307,8 +307,7 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
 # =====================================================
 # TEXTO INTRO
 # =====================================================
-st.markdown(
-    """
+st.markdown("""
 Esta lectura no es una predicción ni una promesa externa.  
 Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
 Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
@@ -326,8 +325,7 @@ La versión completa profundiza mucho más: explora ciclos, capas internas y pat
 
 ✨ Esta lectura no te quita responsabilidad: te la devuelve.  
 Tómala como una brújula, no como un destino.
-"""
-)
+""")
 
 # =====================================================
 # INPUTS
@@ -351,21 +349,6 @@ with col2:
 calcular = st.button("✨ Ver mi lectura ahora")
 hoy = date.today()
 
-# =====================================================
-# PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
-# =====================================================
-if ADMIN_PIN:
-    with st.expander("🔐 Administración", expanded=False):
-        pin_ingresado = st.text_input("PIN de administración", type="password")
-        if pin_ingresado:
-            if pin_ingresado == ADMIN_PIN:
-                st.success("Acceso concedido ✅")
-                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
-                if nombre.strip():
-                    st.caption("Clave del cliente (según nombre+fecha actuales):")
-                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
-            else:
-                st.error("PIN incorrecto")
 
 # =====================================================
 # CÁLCULOS (se calculan siempre)
@@ -439,6 +422,23 @@ if calcular:
     )
 else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
+
+    # =====================================================
+# PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
+# =====================================================
+if ADMIN_PIN:
+    with st.expander("🔐 Eugenia Mstikos", expanded=False):
+        pin_ingresado = st.text_input("PIN de administración", type="password")
+        if pin_ingresado:
+            if pin_ingresado == ADMIN_PIN:
+                st.success("Acceso concedido ✅")
+                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
+                if nombre.strip():
+                    st.caption("Clave del cliente (según nombre+fecha actuales):")
+                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
+            else:
+                st.error("PIN incorrecto")
+
 
 # =====================================================
 # VERSIÓN COMPLETA (CLIENTE) - BLOQUEO POR CLAVE
@@ -587,5 +587,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-
-
