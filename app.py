@@ -448,19 +448,9 @@ st.markdown("🔒 *Versión Completa (PDF personalizado)*")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
 clave_ingresada = st.text_input("Introduce tu clave personal", type="password").strip().upper()
-
 if clave_ingresada:
-    if not nombre.strip():
-        st.info("Para validar tu clave, primero escribe tu nombre completo arriba.")
-        st.stop()
-
-    clave_esperada = generar_clave_unica(nombre, fecha_nac)
-
-    if clave_ingresada != clave_esperada:
-        st.error("Clave inválida. Verifica que tu nombre y fecha estén exactamente como en tu compra.")
-        st.stop()
-
     st.success("Versión completa desbloqueada ✅")
+  
 
     # =====================================================
     # TEXTOS PROFUNDOS (3 párrafos)
@@ -587,3 +577,4 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
