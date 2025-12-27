@@ -290,19 +290,21 @@ def normalizar_clave_nombre(txt: str) -> str:
     txt = re.sub(r"\s+", " ", txt).strip().upper()
     return txt
 
-def primer_nombre_y_apellido(nombre_completo: str) -> str:
-    n = normalizar_clave_nombre(nombre_completo)
-    parts = n.split()
-    if len(parts) >= 2:
-        return f"{parts[0]} {parts[-1]}"
-    return n
-
 def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
-    base_nombre = primer_nombre_y_apellido(nombre_completo)
-    payload = f"{base_nombre}|{fecha_nac.isoformat()}".encode("utf-8")
-    digest = hmac.new(APP_SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
-    core = digest[:12]
-    return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}"
+    # Usa NOMBRE COMPLETO EXACTO (todos los nombres y apellidos)
+    nombre_normalizado = normalizar_clave_nombre(nombre_completo)
+
+    payload = f"{nombre_normalizado}|{fecha_nac.isoformat()}".encode("utf-8")
+
+    digest = hmac.new(
+        APP_SECRET.encode("utf-8"),
+        payload,
+        hashlib.sha256
+    ).hexdigest().upper()
+
+    core = digest[:16]
+
+    return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
 # TEXTO INTRO
@@ -577,4 +579,5 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
 
