@@ -444,17 +444,72 @@ if ADMIN_PIN:
 
 
 # =====================================================
-# VERSIÓN COMPLETA (CLIENTE) - BLOQUEO POR CLAVE
+# VERSIÓN COMPLETA (CLIENTE) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =====================================================
 st.markdown("---")
 st.markdown("🔒 *Versión Completa (PDF personalizado)*")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
-clave_ingresada = st.text_input("Introduce tu clave personal", type="password").strip().upper()
-if clave_ingresada:
-    st.success("Versión completa desbloqueada ✅")
-  
+colv1, colv2 = st.columns(2)
+with colv1:
+    nombre_compra = st.text_input(
+        "Nombre (exactamente como en tu compra)",
+        key="nombre_compra",
+        max_chars=40,
+        placeholder="Ej: Eugenia Mstikos"
+    )
+with colv2:
+    fecha_compra = st.date_input(
+        "Fecha de nacimiento (como en tu compra)",
+        key="fecha_compra",
+        min_value=date(1940, 1, 1),
+        max_value=date(2040, 12, 31),
+        value=date(1990, 1, 1),
+    )
 
+clave_ingresada = st.text_input(
+    "Introduce tu clave personal",
+    type="password"
+).strip().upper()
+
+if clave_ingresada:
+    if not nombre_compra.strip():
+        st.warning("Escribe tu nombre tal como aparece en tu compra.")
+        st.stop()
+
+    # 2️⃣ VALIDACIÓN EXTRA (AQUÍ VA)
+    if not fecha_compra:
+        st.warning("Debes indicar la fecha de nacimiento usada en tu compra.")
+        st.stop()    
+
+    clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
+
+    if clave_ingresada != clave_esperada:
+        st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
+        st.stop()
+
+    st.success("Versión completa desbloqueada ✅")
+# ✅ Forzar que TODO lo de "Lectura Completa" use los datos validados (compra)
+    nombre_validado = nombre_compra.strip()
+    fecha_validada = fecha_compra
+
+    # Recalcular TODO para la versión completa con los datos de compra
+    es = esencia(fecha_validada)
+    mis = sendero_vida(fecha_validada)
+    vp = vida_pasada(fecha_validada)
+
+    ap = ano_personal(fecha_validada, hoy.year)
+    mp = mes_personal(ap, hoy.month)
+    sp = semana_personal(mp, hoy.isocalendar()[1])
+    dp = dia_personal(mp, hoy.day)
+
+    arc = arcano_semanal()
+    pin = pinaculo_piramide(fecha_validada)
+    num_nombre = numero_nombre(nombre_validado) if nombre_validado else 0
+
+
+    # (AQUÍ DEBajo va TODO tu contenido de la lectura completa)
+    # ... textos profundos, secciones, pdf completa, etc.
     # =====================================================
     # TEXTOS PROFUNDOS (3 párrafos)
     # =====================================================
@@ -555,7 +610,7 @@ if clave_ingresada:
 
     # PDF COMPLETO
     secciones_completa = [
-        ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
+        ("Datos", f"Nombre: {nombre_validado or '—'}\nFecha de nacimiento: {fecha_validada}\nGenerado: {hoy}"),
         ("Esencia", f"Número {es}\n\n{parrafos_profundos(es, 'tu Esencia')}"),
         ("Misión / Sendero", f"Número {mis}\n\n{parrafos_profundos(mis, 'tu Misión')}"),
         ("Vida pasada", f"Número {vp}\n\n{parrafos_profundos(vp, 'tu Vida Pasada')}"),
@@ -580,6 +635,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-
-
-
