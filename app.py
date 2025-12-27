@@ -373,33 +373,34 @@ num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 # =====================================================
 if calcular:
     incrementar_contador()
+    with st.container():
 
-    st.markdown("### ✨ Tu lectura resumida")
+         st.markdown("### ✨ Tu lectura resumida")
 
-    st.write(f"Mi esencia — Número {es}")
-    st.write(lectura_resumida(es))
+         st.write(f"Mi esencia — Número {es}")
+         st.write(lectura_resumida(es))
 
-    st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
-    if num_nombre:
-        st.write(lectura_resumida(num_nombre))
-    else:
-        st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
+         st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
+         if num_nombre:
+          st.write(lectura_resumida(num_nombre))
+         else:
+           st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
 
-    st.write(f"Mi misión — Número {mis}")
-    st.write(lectura_resumida(mis))
+         st.write(f"Mi misión — Número {mis}")
+         st.write(lectura_resumida(mis))
 
-    st.write(f"Mi año personal ({hoy.year}) — Número {ap}")
-    st.write(lectura_resumida(ap))
+         st.write(f"Mi año personal ({hoy.year}) — Número {ap}")
+         st.write(lectura_resumida(ap))
 
-    st.write(f"Mi energía de hoy — Número {dp}")
-    st.write(lectura_resumida(dp))
+         st.write(f"Mi energía de hoy — Número {dp}")
+         st.write(lectura_resumida(dp))
 
-    st.write("Mi pináculo (pirámide completa)")
-    st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
-    st.write(pinaculo_micro(pin))
+         st.write("Mi pináculo (pirámide completa)")
+         st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
+         st.write(pinaculo_micro(pin))
 
-    st.write(f"Arcano semanal — Número {arc}")
-    st.write(arcano_micro(arc))
+         st.write(f"Arcano semanal — Número {arc}")
+         st.write(arcano_micro(arc))
 
     # PDF Resumido
     pdf_resumido = build_pdf_bytes(
@@ -579,5 +580,6 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
 
 
