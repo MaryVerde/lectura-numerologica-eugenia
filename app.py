@@ -186,7 +186,6 @@ LECTURA_RESUMIDA = {
     33: "Este año se orienta al amor consciente y al servicio con madurez emocional. Invita a acompañar sin rescatar y a dar sin vaciarte. Tu sensibilidad se vuelve fortaleza cuando hay límites, estructura y autocuidado.",
 }
 
-
 def lectura_resumida(num: int) -> str:
     return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
@@ -316,12 +315,12 @@ Es una orientación energética consciente, basada en la vibración que se activ
 Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
 
 Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
-La numerología, cuando se usa con consciencia, no limita: *ordena, revela y enfoca*.
+La numerología, cuando se usa con consciencia, no limita: ordena, revela y enfoca.
 
 Esta versión resumida te muestra el núcleo de tu vibración: la energía que te atraviesa, lo que se está moviendo en tu camino y el tipo de aprendizaje que se presenta.  
-Es una lectura clara y simbólica, pensada para que puedas *reconocerte*, no para que dependas de ella.
+Es una lectura clara y simbólica, pensada para que puedas reconocerte, no para que dependas de ella.
 
-Si algo de lo que lees resuena, no es casualidad: la energía no grita, *reconoce*.  
+Si algo de lo que lees resuena, no es casualidad: la energía no grita, reconoce.  
 Y cuando reconoces, recuperas poder personal.
 
 La versión completa profundiza mucho más: explora ciclos, capas internas y patrones que se repiten, para ayudarte a recordar con claridad, sostener tu rumbo y elegir con presencia.
@@ -376,42 +375,53 @@ if calcular:
     incrementar_contador()
     with st.container():
 
-         st.markdown("### ✨ Tu lectura resumida")
+        st.markdown("### ✨ Tu lectura resumida")
 
-         st.write(f"Mi esencia — Número {es}")
-         st.write(lectura_resumida(es))
+        # ✅ (CAMBIO) AÑO PERSONAL PRIMERO + TEXTO EXTRA DE PRONÓSTICO
+        st.write(f"🔥 Vibración de tu Año Personal ({hoy.year}) — Número {ap}")
+        st.write(lectura_resumida(ap))
+        st.markdown(
+            "Este año funciona como tu *campo de experiencia principal*: "
+            "ordena el tipo de decisiones que se abren, los cierres que piden dignidad "
+            "y las oportunidades que solo aparecen cuando eliges con presencia. "
+            "Si actúas alineada con esta vibración, la vida se vuelve más clara: "
+            "menos fricción, más coherencia, y un rumbo interno más firme."
+        )
 
-         st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
-         if num_nombre:
-          st.write(lectura_resumida(num_nombre))
-         else:
-           st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
+        # (RESTO IGUAL, solo reordenado para Instagram)
+        st.write(f"Mi esencia — Número {es}")
+        st.write(lectura_resumida(es))
 
-         st.write(f"Mi misión — Número {mis}")
-         st.write(lectura_resumida(mis))
+        st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
+        if num_nombre:
+            st.write(lectura_resumida(num_nombre))
+        else:
+            st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
 
-         st.write(f"Mi año personal ({hoy.year}) — Número {ap}")
-         st.write(lectura_resumida(ap))
+        st.write(f"Mi misión — Número {mis}")
+        st.write(lectura_resumida(mis))
 
-         st.write(f"Mi energía de hoy — Número {dp}")
-         st.write(lectura_resumida(dp))
+        st.write(f"Mi energía de hoy — Número {dp}")
+        st.write(lectura_resumida(dp))
 
-         st.write("Mi pináculo (pirámide completa)")
-         st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
-         st.write(pinaculo_micro(pin))
+        st.write("Mi pináculo (pirámide completa)")
+        st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
+        st.write(pinaculo_micro(pin))
 
-         st.write(f"Arcano semanal — Número {arc}")
-         st.write(arcano_micro(arc))
+        st.write(f"Arcano semanal — Número {arc}")
+        st.write(arcano_micro(arc))
 
     # PDF Resumido
     pdf_resumido = build_pdf_bytes(
         f"{APP_TITLE} · Versión Resumida · {BRAND}",
         [
             ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
+            ("Año personal", f"Número {ap}\n\n{lectura_resumida(ap)}\n\n"
+                            "Este año funciona como tu campo de experiencia principal: ordena decisiones, cierres y oportunidades. "
+                            "Si actúas alineada con esta vibración, la vida se vuelve más clara: menos fricción, más coherencia."),
             ("Mi esencia", f"Número {es}\n\n{lectura_resumida(es)}"),
             ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
             ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
-            ("Mi año personal", f"Número {ap}\n\n{lectura_resumida(ap)}"),
             ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
             ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
             ("Arcano semanal", f"Número {arc}\n\n{arcano_micro(arc)}"),
@@ -427,7 +437,7 @@ if calcular:
 else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
 
-    # =====================================================
+# =====================================================
 # PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
 # =====================================================
 if ADMIN_PIN:
@@ -448,7 +458,7 @@ if ADMIN_PIN:
 # VERSIÓN COMPLETA (CLIENTE) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =====================================================
 st.markdown("---")
-st.markdown("🔒 *Versión Completa (PDF personalizado)*")
+st.markdown("🔒 Versión Completa (PDF personalizado)")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
 colv1, colv2 = st.columns(2)
@@ -481,7 +491,7 @@ if clave_ingresada:
     # 2️⃣ VALIDACIÓN EXTRA (AQUÍ VA)
     if not fecha_compra:
         st.warning("Debes indicar la fecha de nacimiento usada en tu compra.")
-        st.stop()    
+        st.stop()
 
     clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
 
@@ -490,7 +500,7 @@ if clave_ingresada:
         st.stop()
 
     st.success("Versión completa desbloqueada ✅")
-# ✅ Forzar que TODO lo de "Lectura Completa" use los datos validados (compra)
+    # ✅ Forzar que TODO lo de "Lectura Completa" use los datos validados (compra)
     nombre_validado = nombre_compra.strip()
     fecha_validada = fecha_compra
 
@@ -508,9 +518,6 @@ if clave_ingresada:
     pin = pinaculo_piramide(fecha_validada)
     num_nombre = numero_nombre(nombre_validado) if nombre_validado else 0
 
-
-    # (AQUÍ DEBajo va TODO tu contenido de la lectura completa)
-    # ... textos profundos, secciones, pdf completa, etc.
     # =====================================================
     # TEXTOS PROFUNDOS (3 párrafos)
     # =====================================================
@@ -636,4 +643,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-
