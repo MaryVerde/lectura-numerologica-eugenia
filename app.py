@@ -190,7 +190,7 @@ def lectura_resumida(num: int) -> str:
     return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
 # =====================================================
-# GRATIS: FRASES CORTAS (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
+#  (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
 # Basadas en tu Año Personal (ap)
 # =====================================================
 FRASES_AMOR = {
@@ -254,7 +254,7 @@ def frase_categoria(dic: dict, num: int) -> str:
     return dic.get(num, "Mensaje no disponible para esta vibración.")
 
 # =====================================================
-# PAGO: TEXTOS PROFUNDOS (10–12 líneas aprox)
+# TEXTOS PROFUNDOS (10–12 líneas aprox)
 # Basados en tu Año Personal (ap) y modulados por mp/sp/dp
 # =====================================================
 NUM_RASGOS = {
@@ -543,7 +543,7 @@ if ADMIN_PIN:
                 st.error("PIN incorrecto")
 
 # =====================================================
-# VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
+# VERSIÓN COMPLETA - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =====================================================
 st.markdown("---")
 st.markdown("🔒 *Versión Completa (Premium + PDF personalizado)*")
@@ -719,3 +719,4 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
