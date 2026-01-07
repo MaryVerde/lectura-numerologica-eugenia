@@ -190,7 +190,7 @@ def lectura_resumida(num: int) -> str:
     return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
 # =====================================================
-#  (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
+# FRASES CORTAS (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
 # Basadas en tu Año Personal (ap)
 # =====================================================
 FRASES_AMOR = {
@@ -254,7 +254,7 @@ def frase_categoria(dic: dict, num: int) -> str:
     return dic.get(num, "Mensaje no disponible para esta vibración.")
 
 # =====================================================
-# TEXTOS PROFUNDOS (10–12 líneas aprox)
+# PAGO: TEXTOS PROFUNDOS (10–12 líneas aprox)
 # Basados en tu Año Personal (ap) y modulados por mp/sp/dp
 # =====================================================
 NUM_RASGOS = {
@@ -453,7 +453,7 @@ pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
 # =====================================================
-# MOSTRAR RESUMIDA (GRATIS) SOLO AL PRESIONAR BOTÓN
+# MOSTRAR RESUMIDA  SOLO AL PRESIONAR BOTÓN
 # =====================================================
 if calcular:
     incrementar_contador()
@@ -543,10 +543,10 @@ if ADMIN_PIN:
                 st.error("PIN incorrecto")
 
 # =====================================================
-# VERSIÓN COMPLETA - BLOQUEO POR CLAVE + NOMBRE + FECHA
+# VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =====================================================
 st.markdown("---")
-st.markdown("🔒 *Versión Completa (Premium + PDF personalizado)*")
+st.markdown("🔒 Versión Completa (Premium + PDF personalizado)")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
 colv1, colv2 = st.columns(2)
@@ -719,4 +719,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-
