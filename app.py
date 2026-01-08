@@ -540,27 +540,42 @@ def incrementar_contador():
 
 from datetime import date
 
-# ===============================
-# 🌞 ENERGÍA MÍSTICA DEL DÍA (delicada, ligada al calendario)
-# ===============================
+# =====================================================
+# 🌞 ENERGÍA MÍSTICA DEL DÍA (bloque limpio y ritual)
+# =====================================================
 
 hoy = date.today()
 dia_del_ano = hoy.timetuple().tm_yday  # 1–365
 
 st.markdown(
     f"""
-    <div class="em-card" style="text-align:center;">
-        <div style="font-size:0.85rem; letter-spacing:0.5px; text-transform:uppercase; color:#6b5a7a;">
+    <div class="em-card" style="text-align:center; max-width:520px; margin:auto;">
+        
+        <div style="
+            font-size:0.78rem;
+            letter-spacing:0.14em;
+            text-transform:uppercase;
+            color:#6b5a7a;
+            margin-bottom:6px;
+        ">
             Energía mística del día · {hoy.strftime('%d/%m/%Y')}
         </div>
 
-        <div style="margin-top:12px; font-size:1.05rem; line-height:1.7;">
+        <div style="
+            font-size:1.05rem;
+            line-height:1.7;
+            margin-top:10px;
+        ">
             ☀️ <strong>{MENSAJES_MYSTIKOS[dia_del_ano]}</strong>
         </div>
 
-        <div class="em-muted" style="margin-top:10px; font-size:0.9rem;">
+        <div class="em-muted" style="
+            margin-top:10px;
+            font-size:0.85rem;
+        ">
             Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
         </div>
+
     </div>
     """,
     unsafe_allow_html=True
