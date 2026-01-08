@@ -1,7 +1,7 @@
 import os
 import unicodedata
 import re
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 import textwrap
 import hmac
@@ -11,17 +11,503 @@ import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+
+# =====================================================
+# CONFIGURACIÓN GENERAL (PRIMERO EN STREAMLIT)
+# =====================================================
+APP_TITLE = "🔮 Lectura Numerológica"
+BRAND = "Eugenia.Mystikos"
+
+st.set_page_config(
+    page_title=f"{APP_TITLE} · {BRAND}",
+    page_icon="🔮",
+    layout="centered",
+)
+
+# =====================================================
+# ESTILO VISUAL (IG-FRIENDLY)
+# =====================================================
+st.markdown("""
+<style>
+/* Fondo general */
+html, body, [data-testid="stApp"] {
+    background-color: #FBF9FD;
+}
+
+/* Títulos principales */
+h1, h2, h3 {
+    color: #3E2A5E;
+    letter-spacing: 0.4px;
+}
+
+/* Subtítulos */
+h4, h5 {
+    color: #5A3E85;
+}
+
+/* Texto normal */
+p, li, span {
+    color: #3B2F4A;
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+/* Tarjetas suaves */
+.card {
+    background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
+    padding: 22px;
+    border-radius: 22px;
+    border: 1px solid #E3D6ED;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    margin-bottom: 18px;
+}
+
+/* Separadores */
+.divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #C9B6E4, transparent);
+    margin: 30px 0;
+}
+
+/* Botón principal */
+button[kind="primary"] {
+    background: linear-gradient(135deg, #7B4AE2, #A88CF0);
+    border-radius: 18px;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =====================================================
+# 2.2 · HERO (encabezado visual) — NO CAMBIA LA LÓGICA
+# Pegar justo después del CSS (2.1) y ANTES de st.title(...)
+# =====================================================
+
+st.markdown(
+    f"""
+    <div class="em-hero">
+        <div class="em-hero-inner">
+            <div class="em-hero-badge">🔮 {BRAND}</div>
+            <div class="em-hero-title">Lectura Numerológica</div>
+            <div class="em-hero-sub">
+                Brújula energética sobria, mística y cálida — para alinear decisiones, hábitos y vínculos.
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+# =====================================================
+# UI Helpers (Tarjetas / Bloques visuales) — PASO 2.3.1
+# =====================================================
+def em_card(titulo: str, icono: str, contenido: str, muted: str = ""):
+    st.markdown(
+        f"""
+        <div class="em-card">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <div style="font-size:1.25rem;">{icono}</div>
+                <div style="font-weight:700; font-size:1.05rem;">{titulo}</div>
+            </div>
+            <div style="font-size:1.02rem; line-height:1.7;">{contenido}</div>
+            {f'<div class="em-muted" style="margin-top:10px;">{muted}</div>' if muted else ''}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+def em_section(titulo: str, icono: str = "✨"):
+    st.markdown(f"## {icono} {titulo}")
+
+def em_divider():
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+# =====================================================
+# 🌞 ENERGÍA MYSTIKA DE EUGENIA · MENSAJES DEL DÍA (1–365)
+# =====================================================
+MENSAJES_MYSTIKOS = {
+    1: "Hoy no apresures nada. La energía se ordena cuando eliges presencia en lugar de urgencia.",
+    2: "Confía en tu ritmo. No todo florece el mismo día, pero todo responde a la intención correcta.",
+    3: "Lo que hoy parece pequeño está sembrando una verdad más grande.",
+    4: "Respira antes de decidir. La claridad llega cuando el cuerpo se relaja.",
+    5: "No te adaptes a lo que te apaga. Ajusta el entorno, no tu esencia.",
+    6: "Hoy es un buen día para poner un límite amoroso.",
+    7: "El silencio también es una respuesta sabia.",
+    8: "Suelta el control: lo verdadero no necesita ser forzado.",
+    9: "Hoy honra lo que ya lograste. Reconocer tu avance cambia la energía.",
+    10: "La coherencia vale más que la velocidad.",
+    11: "Tu sensibilidad es una brújula, no una debilidad.",
+    12: "Escucha lo que incomoda: ahí hay información valiosa.",
+    13: "Cerrar a tiempo también es un acto de amor propio.",
+    14: "Hoy elige con calma, incluso si otros apuran.",
+    15: "No todo merece tu energía. Sé selectiva.",
+    16: "La verdad se sostiene sola. No la justifiques.",
+    17: "Hoy el cuerpo sabe más que la mente.",
+    18: "Avanza un paso real, no diez imaginarios.",
+    19: "Tu intuición está clara cuando no la discutes.",
+    20: "Orden externo, paz interna.",
+    21: "Hoy se afloja una carga que no era tuya.",
+    22: "Confía: lo que se acomoda hoy libera futuro.",
+    23: "No te traiciones para evitar conflicto.",
+    24: "La energía responde a la honestidad.",
+    25: "Descansar también es avanzar.",
+    26: "Hoy elige lo simple. Ahí está la fuerza.",
+    27: "No rescates procesos ajenos.",
+    28: "Tu claridad inspira sin que hables.",
+    29: "Hoy es mejor decir menos y sentir más.",
+    30: "La estabilidad se construye con decisiones pequeñas.",
+    31: "Cierra el mes soltando expectativas irreales.",
+    32: "Hoy tu energía pide enfoque, no dispersión.",
+    33: "Elegir paz no es rendirse.",
+    34: "No negocies lo esencial.",
+    35: "La vida te responde cuando te alineas.",
+    36: "Hoy se ordena algo interno si no lo fuerzas.",
+    37: "Observa sin juzgar: ahí está la enseñanza.",
+    38: "No todo se resuelve hoy, y está bien.",
+    39: "Respeta tu proceso aunque otros no lo entiendan.",
+    40: "Tu energía vale más que tu explicación.",
+    41: "Hoy es día de sostener, no de empujar.",
+    42: "Cuando te eliges, todo se reacomoda.",
+    43: "No respondas desde la herida.",
+    44: "El equilibrio se construye con límites claros.",
+    45: "Hoy tu presencia es suficiente.",
+    46: "La calma también es poder.",
+    47: "No corrijas lo que aún está aprendiendo.",
+    48: "Hoy escucha tu cansancio con respeto.",
+    49: "Lo que se va libera espacio.",
+    50: "Avanza sin ruido, pero con certeza.",
+    51: "No prometas desde la emoción.",
+    52: "El cuerpo pide verdad, no discurso.",
+    53: "Hoy cuida tu energía como algo sagrado.",
+    54: "No todo merece respuesta inmediata.",
+    55: "Elegir distinto es evolución.",
+    56: "La claridad llega cuando dejas de justificar.",
+    57: "Hoy honra tus límites.",
+    58: "No cargues con lo que no te corresponde.",
+    59: "La coherencia se siente.",
+    60: "Suelta la expectativa, sostén la intención.",
+    61: "Hoy el orden interno es prioridad.",
+    62: "Tu energía se expande cuando te respetas.",
+    63: "No expliques tu verdad: vívela.",
+    64: "Hoy es mejor avanzar lento que dudar rápido.",
+    65: "La estabilidad nace de decisiones honestas.",
+    66: "No te adaptes a lo que te drena.",
+    67: "La vida responde a tu claridad.",
+    68: "Hoy escucha sin interrumpirte.",
+    69: "El silencio ordena más de lo que crees.",
+    70: "Tu intuición está afinada.",
+    71: "No todo cierre es pérdida.",
+    72: "Hoy suelta la autoexigencia innecesaria.",
+    73: "Respeta tus tiempos internos.",
+    74: "Elegir calma es elegir poder.",
+    75: "No te distraigas de lo importante.",
+    76: "Hoy cuida tu energía emocional.",
+    77: "La claridad no grita.",
+    78: "No rescates procesos que no son tuyos.",
+    79: "Tu paz es prioridad.",
+    80: "Hoy se ordena algo si no intervienes de más.",
+    81: "Avanza con firmeza tranquila.",
+    82: "No fuerces acuerdos.",
+    83: "El equilibrio se construye.",
+    84: "Hoy escucha tu cuerpo.",
+    85: "No todo se decide hoy.",
+    86: "La coherencia te sostiene.",
+    87: "Suelta lo que pesa.",
+    88: "Hoy confía en lo que sientes.",
+    89: "No te justifiques.",
+    90: "La energía responde a tu honestidad.",
+    91: "Hoy elige presencia antes que reacción.",
+    92: "La claridad se activa cuando dejas de forzar.",
+    93: "Hoy confía en lo que ya sabes internamente.",
+    94: "No todo requiere respuesta inmediata.",
+    95: "Tu energía se ordena cuando te respetas.",
+    96: "Hoy menos palabras, más verdad.",
+    97: "El equilibrio nace de decisiones pequeñas.",
+    98: "Hoy tu cuerpo habla: escúchalo.",
+    99: "La calma también es acción.",
+    100: "Hoy sostén tu centro sin explicarte.",
+    101: "No te disperses: vuelve a lo esencial.",
+    102: "Hoy suelta la prisa, no el rumbo.",
+    103: "Elegir paz es un acto de poder.",
+    104: "Hoy honra tus límites.",
+    105: "Lo alineado no se siente pesado.",
+    106: "Respira antes de decidir.",
+    107: "No cargues lo que no te corresponde.",
+    108: "Hoy la coherencia es protección.",
+    109: "Avanza sin justificarte.",
+    110: "Tu energía responde a tu honestidad.",
+    111: "Hoy tu intuición está afinada.",
+    112: "No fuerces acuerdos.",
+    113: "El orden interno se refleja afuera.",
+    114: "Hoy elige calidad, no cantidad.",
+    115: "Suelta el control excesivo.",
+    116: "Lo simple también es sagrado.",
+    117: "Hoy cuida tu energía emocional.",
+    118: "No todo se decide hoy.",
+    119: "Escucha más de lo que hablas.",
+    120: "Tu presencia es suficiente.",
+    121: "Hoy el silencio trae claridad.",
+    122: "No te traiciones por comodidad.",
+    123: "El descanso también es productividad.",
+    124: "Hoy avanza sin ruido.",
+    125: "Confía en el proceso que ya empezó.",
+    126: "Tu centro es tu guía.",
+    127: "No expliques lo que ya sentiste.",
+    128: "Hoy baja el ritmo conscientemente.",
+    129: "Lo verdadero no se apura.",
+    130: "Tu paz es prioridad.",
+    131: "Hoy observa antes de actuar.",
+    132: "No todo requiere intervención.",
+    133: "La claridad llega cuando paras.",
+    134: "Hoy cuida tus palabras.",
+    135: "No cargues expectativas ajenas.",
+    136: "El equilibrio se construye.",
+    137: "Hoy elige presencia corporal.",
+    138: "La calma ordena decisiones.",
+    139: "Suelta la necesidad de convencer.",
+    140: "Tu energía se reajusta sola.",
+    141: "Hoy vuelve a lo esencial.",
+    142: "No te disperses emocionalmente.",
+    143: "El foco es medicina.",
+    144: "Hoy honra tu ritmo interno.",
+    145: "No todo merece respuesta.",
+    146: "Tu coherencia abre camino.",
+    147: "La claridad no grita.",
+    148: "Hoy confía sin forzar.",
+    149: "Sostén tu verdad con calma.",
+    150: "Menos ruido, más centro.",
+    151: "Hoy elige estabilidad emocional.",
+    152: "No reacciones desde el cansancio.",
+    153: "El orden interno se nota.",
+    154: "Hoy no te sobreexijas.",
+    155: "La pausa es parte del avance.",
+    156: "Tu energía se regula con límites.",
+    157: "Hoy respira conscientemente.",
+    158: "No fuerces resultados.",
+    159: "El cuerpo marca el camino.",
+    160: "Hoy sostén tu eje.",
+    161: "No te adelantes al proceso.",
+    162: "Hoy escucha sin defenderte.",
+    163: "La serenidad es poder.",
+    164: "No todo es urgente.",
+    165: "Hoy elige claridad interna.",
+    166: "Suelta la autoexigencia.",
+    167: "La calma te ordena.",
+    168: "Hoy cuida tu energía vital.",
+    169: "No cargues lo innecesario.",
+    170: "Tu centro te sostiene.",
+    171: "Hoy confía en el paso presente.",
+    172: "No todo se resuelve hoy.",
+    173: "La coherencia te protege.",
+    174: "Hoy elige sobriedad emocional.",
+    175: "No te pierdas por complacer.",
+    176: "El silencio también comunica.",
+    177: "Hoy baja expectativas externas.",
+    178: "Tu energía se afina sola.",
+    179: "El equilibrio es práctica diaria.",
+    180: "Hoy sostén lo que es real.",
+    181: "No fuerces conversaciones.",
+    182: "Hoy prioriza tu estabilidad.",
+    183: "La claridad se construye.",
+    184: "No tomes decisiones cansada.",
+    185: "Hoy honra tu intuición.",
+    186: "La calma es dirección.",
+    187: "No te expliques de más.",
+    188: "Hoy elige sencillez.",
+    189: "Tu energía pide orden.",
+    190: "Suelta lo que pesa.",
+    191: "Hoy vuelve a tu cuerpo.",
+    192: "No persigas respuestas.",
+    193: "La presencia es suficiente.",
+    194: "Hoy cuida tus límites.",
+    195: "No cargues culpas ajenas.",
+    196: "El centro se recupera.",
+    197: "Hoy actúa con mesura.",
+    198: "La calma estabiliza.",
+    199: "No todo se explica.",
+    200: "Hoy elige coherencia.",
+    201: "Respeta tu energía.",
+    202: "No te fuerces a rendir.",
+    203: "La claridad llega sola.",
+    204: "Hoy baja el ruido mental.",
+    205: "No te disperses emocionalmente.",
+    206: "El equilibrio es interno.",
+    207: "Hoy confía en tu proceso.",
+    208: "No todo se comparte.",
+    209: "La sobriedad protege.",
+    210: "Hoy vuelve a tu eje.",
+    211: "No te adelantes.",
+    212: "La pausa es sabia.",
+    213: "Hoy escucha tu cuerpo.",
+    214: "No cargues tensiones viejas.",
+    215: "El presente basta.",
+    216: "Hoy elige calma.",
+    217: "No reacciones por hábito.",
+    218: "Tu energía se regula.",
+    219: "La claridad no se fuerza.",
+    220: "Hoy sostén tu verdad.",
+    221: "No te pierdas en ruido externo.",
+    222: "Hoy cuida tu centro.",
+    223: "El equilibrio se siente.",
+    224: "No todo es prioridad.",
+    225: "Hoy baja el ritmo.",
+    226: "La calma es estrategia.",
+    227: "No te disperses.",
+    228: "Hoy respira profundo.",
+    229: "La coherencia ordena.",
+    230: "Tu energía responde.",
+    231: "No fuerces soluciones.",
+    232: "Hoy elige presencia.",
+    233: "El silencio aclara.",
+    234: "No todo se resuelve hoy.",
+    235: "Hoy confía en tu centro.",
+    236: "La calma guía.",
+    237: "No cargues expectativas.",
+    238: "Hoy sostén tu eje.",
+    239: "La sobriedad es fuerza.",
+    240: "Tu energía se ordena.",
+    241: "No te disperses mentalmente.",
+    242: "Hoy prioriza lo esencial.",
+    243: "El equilibrio se construye.",
+    244: "No fuerces ritmos.",
+    245: "Hoy escucha más.",
+    246: "La presencia sana.",
+    247: "No cargues tensiones.",
+    248: "Hoy elige coherencia.",
+    249: "La calma sostiene.",
+    250: "Tu centro es guía.",
+    251: "No todo se decide hoy.",
+    252: "Hoy baja la exigencia.",
+    253: "El silencio protege.",
+    254: "No reacciones automáticamente.",
+    255: "Hoy honra tu cuerpo.",
+    256: "La claridad llega.",
+    257: "No fuerces respuestas.",
+    258: "Hoy confía en ti.",
+    259: "El equilibrio se afina.",
+    260: "Tu energía responde.",
+    261: "No cargues lo innecesario.",
+    262: "Hoy elige calma interna.",
+    263: "La coherencia guía.",
+    264: "No te disperses.",
+    265: "Hoy respira profundo.",
+    266: "La sobriedad ordena.",
+    267: "No fuerces procesos.",
+    268: "Hoy sostén tu centro.",
+    269: "La presencia basta.",
+    270: "Tu energía se alinea.",
+    271: "No te adelantes.",
+    272: "Hoy cuida tu ritmo.",
+    273: "El silencio aclara.",
+    274: "No cargues ruido.",
+    275: "Hoy elige estabilidad.",
+    276: "La calma es dirección.",
+    277: "No fuerces acuerdos.",
+    278: "Hoy escucha tu cuerpo.",
+    279: "El equilibrio protege.",
+    280: "Tu centro responde.",
+    281: "No reacciones por costumbre.",
+    282: "Hoy baja el ritmo.",
+    283: "La claridad se siente.",
+    284: "No te sobreexijas.",
+    285: "Hoy honra tu energía.",
+    286: "La coherencia sostiene.",
+    287: "No cargues tensiones.",
+    288: "Hoy elige presencia.",
+    289: "El silencio ordena.",
+    290: "Tu energía responde.",
+    291: "No fuerces resultados.",
+    292: "Hoy vuelve a lo simple.",
+    293: "La calma guía.",
+    294: "No te disperses.",
+    295: "Hoy escucha más.",
+    296: "El equilibrio se ajusta.",
+    297: "No cargues expectativas.",
+    298: "Hoy confía en tu centro.",
+    299: "La presencia basta.",
+    300: "Tu energía se ordena.",
+    301: "No todo se resuelve hoy.",
+    302: "Hoy baja la prisa.",
+    303: "La coherencia protege.",
+    304: "No te fuerces.",
+    305: "Hoy honra tu ritmo.",
+    306: "El silencio aclara.",
+    307: "No cargues ruido.",
+    308: "Hoy elige calma.",
+    309: "El equilibrio sostiene.",
+    310: "Tu centro guía.",
+    311: "No reacciones automáticamente.",
+    312: "Hoy escucha tu cuerpo.",
+    313: "La claridad se siente.",
+    314: "No te disperses.",
+    315: "Hoy cuida tu energía.",
+    316: "La coherencia ordena.",
+    317: "No fuerces procesos.",
+    318: "Hoy sostén tu centro.",
+    319: "El silencio protege.",
+    320: "Tu energía responde.",
+    321: "No cargues lo innecesario.",
+    322: "Hoy baja el ritmo.",
+    323: "La calma guía.",
+    324: "No te adelantes.",
+    325: "Hoy confía en tu proceso.",
+    326: "El equilibrio se afina.",
+    327: "No fuerces acuerdos.",
+    328: "Hoy escucha más.",
+    329: "La presencia basta.",
+    330: "Tu centro sostiene.",
+    331: "No todo es urgente.",
+    332: "Hoy honra tu cuerpo.",
+    333: "La coherencia protege.",
+    334: "No cargues ruido.",
+    335: "Hoy elige calma.",
+    336: "El silencio aclara.",
+    337: "No te disperses.",
+    338: "Hoy vuelve a lo esencial.",
+    339: "La claridad se siente.",
+    340: "Tu energía responde.",
+    341: "No fuerces decisiones.",
+    342: "Hoy baja la exigencia.",
+    343: "La calma es poder.",
+    344: "No cargues tensiones.",
+    345: "Hoy cuida tu centro.",
+    346: "El equilibrio guía.",
+    347: "No reacciones por hábito.",
+    348: "Hoy confía en ti.",
+    349: "La presencia basta.",
+    350: "Tu energía se ordena.",
+    351: "No todo se explica.",
+    352: "Hoy escucha tu intuición.",
+    353: "La coherencia sostiene.",
+    354: "No fuerces ritmos.",
+    355: "Hoy elige sobriedad.",
+    356: "El silencio protege.",
+    357: "No te disperses.",
+    358: "Hoy vuelve a tu eje.",
+    359: "La claridad se siente.",
+    360: "Tu centro responde.",
+    361: "No cargues lo innecesario.",
+    362: "Hoy baja el ruido.",
+    363: "La calma guía.",
+    364: "No te adelantes.",
+    365: "Cierra el año en coherencia y verdad."
+}
+
+def mensaje_Mystikos_del_dia() -> str:
+    """Devuelve el mensaje del día según el día del año (1–365)."""
+    dia = datetime.now().timetuple().tm_yday  # 1..365
+    return MENSAJES_MYSTIKOS.get(dia) or MENSAJES_MYSTIKOS.get(((dia - 1) % 365) + 1) or "Hoy vuelve a tu centro."
+
 # =====================================================
 # SECRETOS (STREAMLIT CLOUD + LOCAL)
 # =====================================================
 def get_secret(key: str, default=None):
-    # 1) Streamlit Secrets
     try:
         if hasattr(st, "secrets") and key in st.secrets:
             return st.secrets[key]
     except Exception:
         pass
-    # 2) Variables de entorno (local)
     return os.getenv(key, default)
 
 APP_SECRET = get_secret("APP_SECRET")
@@ -49,27 +535,66 @@ def incrementar_contador():
         with open(COUNTER_FILE, "w", encoding="utf-8") as f:
             f.write(str(total))
     except:
-        # En Streamlit Cloud a veces el FS es de solo lectura
         pass
     return total
 
 # =====================================================
-# CONFIGURACIÓN GENERAL
+# HERO (PORTADA)
 # =====================================================
-APP_TITLE = "🔮 Lectura Numerológica"
-BRAND = "Eugenia.Mystikos"
-
-st.set_page_config(
-    page_title=f"{APP_TITLE} · {BRAND}",
-    page_icon="🔮",
-    layout="centered"
-)
-
-st.title(f"{APP_TITLE} · {BRAND}")
 st.markdown(
-    f"{BRAND}  \n"
-    "Versión Resumida · Interpretación completa en versión completa (PDF personalizado)"
+    f"""
+    <div class="em-hero">
+      <p class="em-hero-title">{APP_TITLE} · {BRAND}</p>
+      <p class="em-hero-sub">
+        Una brújula energética: sobria, profunda y cálida. <br/>
+        <span class="em-muted">Lectura energética consciente · con opción de lectura profunda personalizada.</span>
+      </p>
+      <span class="em-chip">🔮 Claridad</span>
+      <span class="em-chip">🌙 Intuición</span>
+      <span class="em-chip">🧭 Dirección</span>
+      <span class="em-chip">✨ Coherencia</span>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
+# =====================================================
+# ENERGÍA MYSTIKA DE EUGENIA (TARJETA DEL DÍA)
+# =====================================================
+st.markdown("### ☀️ Energía Mystika de Eugenia.Hoy")
+st.markdown(
+    f"""
+    <div class="em-card" style="text-align:center; font-size:1.08rem; line-height:1.7;">
+      🔮 <strong>{mensaje_Mystikos_del_dia()}</strong>
+      <div class="em-muted" style="margin-top:10px;">
+        Un pulso energético para centrarte y alinearte hoy.
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# =====================================================
+# TEXTO INTRO
+# =====================================================
+st.markdown(
+    """
+    <div class="em-card">
+      <strong>🧭 Sobre esta lectura</strong><br/><br/>
+      Esta lectura no es una predicción ni una promesa externa.  
+      Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
+      Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.<br/><br/>
+      Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente
+      y qué tipo de decisiones se alinean mejor con tu proceso actual.  
+      La numerología, cuando se usa con consciencia, no limita: ordena, revela y enfoca.<br/><br/>
+      ✨ <strong>Esta lectura no te quita responsabilidad: te la devuelve.</strong><br/>
+      Tómala como una brújula, no como un destino.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
 
 # =====================================================
 # UTILIDADES NUMEROLÓGICAS
@@ -124,7 +649,6 @@ def numero_apto(apto: str) -> int:
         return sumar_digitos_texto(apto)
     return numero_nombre(apto)
 
-# ---- Núcleos principales ----
 def esencia(fecha: date) -> int:
     return reducir_numero(fecha.day)
 
@@ -146,12 +670,10 @@ def semana_personal(mes_p: int, semana_del_ano: int) -> int:
 def dia_personal(mes_p: int, dia_hoy: int) -> int:
     return reducir_numero(mes_p + dia_hoy)
 
-# ---- Arcano semanal ----
 def arcano_semanal() -> int:
     semana = date.today().isocalendar()[1]
     return (semana % 22) + 1
 
-# ---- Pináculo pirámide completa ----
 def pinaculo_piramide(fecha: date) -> dict:
     d = reducir_numero(fecha.day)
     m = reducir_numero(fecha.month)
@@ -190,8 +712,7 @@ def lectura_resumida(num: int) -> str:
     return LECTURA_RESUMIDA.get(num, "Lectura no disponible para esta vibración.")
 
 # =====================================================
-# FRASES CORTAS GRATIS (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
-# Basadas en tu Año Personal (ap)
+# FRASES CLAVE (AMOR / DINERO / EMOCIONAL / PROTECCIÓN)
 # =====================================================
 FRASES_AMOR = {
     1:"Amor: inicia desde ti; el vínculo correcto nace cuando eliges con valentía y dejas de mendigar señales.",
@@ -273,7 +794,6 @@ NUM_RASGOS = {
 
 def parrafo_premium_categoria(ap: int, mp: int, sp: int, dp: int, categoria: str) -> str:
     a, b, c = NUM_RASGOS.get(ap, ("equilibrio", "conciencia", "claridad"))
-
     base = (
         f"En {categoria}, tu ciclo se ordena desde la vibración {ap}: un núcleo de {a} que marca el ritmo principal. "
         f"Esto se expresa en decisiones, personas que aparecen, límites que se piden y oportunidades que solo se abren cuando eliges con presencia."
@@ -291,7 +811,7 @@ def parrafo_premium_categoria(ap: int, mp: int, sp: int, dp: int, categoria: str
     return f"{base}\n\n{detalle}\n\n{guia}"
 
 # =====================================================
-# TEXTOS PREMIUM PROPIOS (TELÉFONO / HOGAR) — 5 a 7 líneas
+# TEXTOS PREMIUM PROPIOS (TELÉFONO / HOGAR)
 # =====================================================
 def texto_telefono(numero: int) -> str:
     return (
@@ -310,13 +830,12 @@ def texto_hogar(numero: int) -> str:
     )
 
 # =====================================================
-# PINÁCULO (LARGO) — 10 a 12 líneas
+# PINÁCULO (LARGO)
 # =====================================================
 def pinaculo_micro(pin: dict) -> str:
     b1, b2, b3 = pin["base"]
     m1, m2 = pin["medio"]
     cima = pin["cima"]
-
     return (
         "Tu pináculo es un mapa de etapas: muestra cómo se construye tu fortaleza interna en el tiempo.\n\n"
         f"La base ({b1}, {b2}, {b3}) habla de los aprendizajes que te formaron: patrones familiares, decisiones tempranas y "
@@ -329,8 +848,7 @@ def pinaculo_micro(pin: dict) -> str:
     )
 
 # =====================================================
-# ARCANOS MAYORES (NÚMERO + NOMBRE + 2+ LÍNEAS)
-# 1 = EL MAGO, 16 = LA TORRE, etc.
+# ARCANOS MAYORES
 # =====================================================
 ARCANOS_RESUMIDOS = {
     1:  "Arcano I — El Mago.\nInicio consciente y poder personal: actuar con intención abre caminos reales.",
@@ -411,7 +929,7 @@ def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
     return buffer.read()
 
 # =====================================================
-# CLAVE (estable, reutilizable infinitamente) — NO TOCADO
+# CLAVE (estable, reutilizable infinitamente)
 # =====================================================
 def normalizar_clave_nombre(txt: str) -> str:
     txt = unicodedata.normalize("NFD", str(txt))
@@ -428,23 +946,9 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
-# TEXTO INTRO
-# =====================================================
-st.markdown("""
-Esta lectura no es una predicción ni una promesa externa.  
-Es una orientación energética consciente, basada en la vibración que se activa a partir de tu fecha de nacimiento y tu nombre.  
-Cada nombre refleja una frecuencia, y cada frecuencia describe una forma de transitar la vida en este momento.
-
-Aquí no buscamos decirte qué va a pasar, sino ayudarte a comprender qué energía está disponible para ti ahora, cómo se manifiesta internamente y qué tipo de decisiones se alinean mejor con tu proceso actual.  
-La numerología, cuando se usa con consciencia, no limita: ordena, revela y enfoca.
-
-✨ Esta lectura no te quita responsabilidad: te la devuelve.  
-Tómala como una brújula, no como un destino.
-""")
-
-# =====================================================
 # INPUTS
 # =====================================================
+st.markdown("### 🗓️ Tus datos")
 col1, col2 = st.columns(2)
 with col1:
     fecha_nac = st.date_input(
@@ -461,7 +965,7 @@ with col2:
         placeholder="Ej: Eugenia Mystikos"
     )
 
-calcular = st.button("✨ Ver mi lectura ahora")
+calcular = st.button("✨ Recibir mi lectura")
 hoy = date.today()
 
 # =====================================================
@@ -481,59 +985,96 @@ pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
 # =====================================================
-# MOSTRAR RESUMIDA SOLO AL PRESIONAR BOTÓN
+# MOSTRAR ESENCIAL SOLO AL PRESIONAR BOTÓN
 # =====================================================
 if calcular:
     incrementar_contador()
 
-    with st.container():
-        st.markdown("### ✨ Tu lectura resumida")
+    st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
+    st.markdown("## ✨ Lectura esencial")
 
-        st.write(f"🔥 Vibración de tu Año Personal ({hoy.year}) — Número {ap}")
-        st.write(lectura_resumida(ap))
-        st.markdown(
-            "Este año funciona como tu campo de experiencia principal: ordena decisiones, cierres y oportunidades. "
-            "Si actúas alineada con esta vibración, la vida se vuelve más clara: menos fricción, más coherencia, y un rumbo interno más firme."
-        )
+    st.markdown(f"### 🔥 Año personal ({hoy.year}) — Número {ap}")
+    st.markdown(f'<div class="em-card">{lectura_resumida(ap)}</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="em-card em-muted">'
+        "Este año funciona como tu campo de experiencia principal: ordena decisiones, cierres y oportunidades. "
+        "Si actúas alineada con esta vibración, la vida se vuelve más clara: menos fricción, más coherencia, y un rumbo interno más firme."
+        "</div>",
+        unsafe_allow_html=True
+    )
 
-        st.write(f"Mi esencia — Número {es}")
-        st.write(lectura_resumida(es))
+    st.markdown(f"### 🌿 Esencia — Número {es}")
+    st.markdown(f'<div class="em-card">{lectura_resumida(es)}</div>', unsafe_allow_html=True)
 
-        st.write(f"Mi nombre completo — Número {num_nombre if num_nombre else '—'}")
-        if num_nombre:
-            st.write(lectura_resumida(num_nombre))
-        else:
-            st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
+    st.markdown(f"### 🪞 Nombre — Número {num_nombre if num_nombre else '—'}")
+    if num_nombre:
+        st.markdown(f'<div class="em-card">{lectura_resumida(num_nombre)}</div>', unsafe_allow_html=True)
+    else:
+        st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
 
-        st.write(f"Mi misión — Número {mis}")
-        st.write(lectura_resumida(mis))
+    st.markdown(f"### 🧭 Misión — Número {mis}")
+    st.markdown(f'<div class="em-card">{lectura_resumida(mis)}</div>', unsafe_allow_html=True)
 
-        st.write(f"Mi energía de hoy — Número {dp}")
-        st.write(lectura_resumida(dp))
+    st.markdown(f"### 🌙 Energía de hoy — Número {dp}")
+    st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
 
-        st.markdown("#### 💡 Pronóstico clave (gratis)")
-        st.write(frase_categoria(FRASES_AMOR, ap))
-        st.write(frase_categoria(FRASES_DINERO, ap))
-        st.write(frase_categoria(FRASES_EMOCIONAL, ap))
-        st.write(frase_categoria(FRASES_PROTECCION, ap))
+    st.markdown("### 💡 Pronóstico clave")
 
-        st.write("Mi pináculo (pirámide completa)")
-        st.write(f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}")
-        st.write(pinaculo_micro(pin))
+    st.markdown("### 💡 Pronóstico clave")
+    em_section("Pronóstico esencial del momento", "🧿")
 
-        st.write("Arcano mayor semanal")
-        st.write(arcano_micro(arc))
+    em_card(
+                "Amor y vínculos",
+                "💗",
+                frase_categoria(FRASES_AMOR, ap),
+                "Lectura base para comprender la dinámica afectiva activa."
+            )
+
+    em_card(
+                "Dinero y propósito material",
+                "💰",
+                frase_categoria(FRASES_DINERO, ap),
+                "Señal práctica sobre decisiones, orden y movimiento económico."
+            )
+
+    em_card(
+                "Energía emocional",
+                "🌊",
+                frase_categoria(FRASES_EMOCIONAL, ap),
+                "Clima interno actual y forma consciente de regularlo."
+            )
+
+    em_card(
+                "Protección energética",
+                "🛡️",
+                frase_categoria(FRASES_PROTECCION, ap),
+                "Recomendación para resguardar tu campo energético."
+            )
+     
+    st.markdown("### 🏔️ Pináculo (pirámide completa)")
+    st.markdown(
+        f"""
+        <div class="em-card">
+          <div class="em-muted">Base: {pin['base']} · Medio: {pin['medio']} · Cima: {pin['cima']}</div>
+          <div style="margin-top:10px;">{pinaculo_micro(pin)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### 🃏 Arcano mayor semanal")
+    st.markdown(f'<div class="em-card">{arcano_micro(arc)}</div>', unsafe_allow_html=True)
 
     pdf_resumido = build_pdf_bytes(
-        f"{APP_TITLE} · Versión Resumida · {BRAND}",
+        f"{APP_TITLE} ·  Tu Lectura · {BRAND}",
         [
             ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
             ("Año personal", f"Número {ap}\n\n{lectura_resumida(ap)}"),
-            ("Mi esencia", f"Número {es}\n\n{lectura_resumida(es)}"),
+            ("Esencia", f"Número {es}\n\n{lectura_resumida(es)}"),
             ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
             ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
             ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
-            ("Pronóstico clave (gratis)",
+            ("Pronóstico clave",
              f"{frase_categoria(FRASES_AMOR, ap)}\n{frase_categoria(FRASES_DINERO, ap)}\n{frase_categoria(FRASES_EMOCIONAL, ap)}\n{frase_categoria(FRASES_PROTECCION, ap)}"),
             ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
             ("Arcano mayor semanal", arcano_micro(arc)),
@@ -541,9 +1082,9 @@ if calcular:
     )
 
     st.download_button(
-        "⬇️ Descargar PDF (Versión Resumida)",
+        "⬇️ Descargar PDF ( Tu Lectura Mystika )",
         data=pdf_resumido,
-        file_name=f"Lectura_Numerologica_Resumida_{BRAND}.pdf",
+        file_name=f"Lectura_Numerologica_Esencial_{BRAND}.pdf",
         mime="application/pdf",
     )
 else:
@@ -558,7 +1099,7 @@ if ADMIN_PIN:
         if pin_ingresado:
             if pin_ingresado == ADMIN_PIN:
                 st.success("Acceso concedido ✅")
-                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
+                st.info(f"📊 Uso interno · Total activaciones esencial: {leer_contador()}")
                 if nombre.strip():
                     st.caption("Clave del cliente (según nombre+fecha actuales):")
                     st.code(generar_clave_unica(nombre, fecha_nac), language="text")
@@ -568,9 +1109,12 @@ if ADMIN_PIN:
 # =====================================================
 # VERSIÓN COMPLETA (PAGO) - NO TOCADO EN LÓGICA
 # =====================================================
-st.markdown("---")
-st.markdown("🔒 Versión Completa (Premium + PDF personalizado)")
-st.write("Desbloquea tu lectura completa con tu clave personal.")
+st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
+st.markdown("## 💎 Lectura profunda personalizada")
+st.markdown(
+    '<div class="em-card em-muted">Accede a tu lecturs profunda usando tu clave personal. Si tu nombre/fecha no coinciden exactamente con la compra, la clave no validará.</div>',
+    unsafe_allow_html=True
+)
 
 colv1, colv2 = st.columns(2)
 with colv1:
@@ -578,7 +1122,7 @@ with colv1:
         "Nombre (exactamente como en tu compra)",
         key="nombre_compra",
         max_chars=40,
-        placeholder="Ej: Eugenia Mystikos"
+        placeholder="Ej: Eugenia Mistikos"
     )
 with colv2:
     fecha_compra = st.date_input(
@@ -627,19 +1171,18 @@ if clave_ingresada:
     arc_p = arcano_semanal()
     pin_p = pinaculo_piramide(fecha_validada)
 
-    # Inputs extra premium (TELÉFONO / DIRECCIÓN) — con key para que sí puedas escribir
     st.markdown("### 📌 Datos opcionales Premium")
     cA, cB = st.columns(2)
     with cA:
         telefono = st.text_input(
-            "Teléfono (opcional)",
+            "📞 Teléfono (opcional)",
             value="",
             placeholder="Ej: +58 412 000 0000",
             key="telefono_premium"
         )
     with cB:
         direccion_apto = st.text_input(
-            "Dirección / Apto (opcional)",
+            "🏠 Dirección / Apto (opcional)",
             value="",
             placeholder="Ej: Torre A, Apto 12B",
             key="direccion_premium"
@@ -648,33 +1191,33 @@ if clave_ingresada:
     num_tel = numero_apto(telefono) if telefono.strip() else 0
     num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
 
-    st.markdown("## 💎 Lectura Completa")
+    st.markdown("## 🌙 Secciones Premium")
 
-    st.markdown("### 1) Esencia")
+    st.markdown("### 🌿 1) Esencia")
     st.write(f"Número {es_p}")
     st.write(parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, "Esencia"))
 
-    st.markdown("### 2) Misión / Sendero de vida")
+    st.markdown("### 🧭 2) Misión / Sendero de vida")
     st.write(f"Número {mis_p}")
     st.write(parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, "Misión"))
 
-    st.markdown("### 3) Vida pasada")
+    st.markdown("### 🕰️ 3) Vida pasada")
     st.write(f"Número {vp_p}")
     st.write(parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, "Vida pasada"))
 
-    st.markdown("### 4) Año personal")
+    st.markdown("### 🔥 4) Año personal")
     st.write(f"Número {ap_p}")
     st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Año personal"))
 
-    st.markdown("### 5) Mes personal")
+    st.markdown("### 🗓️ 5) Mes personal")
     st.write(f"Número {mp_p}")
     st.write(parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, "Mes personal"))
 
-    st.markdown("### 6) Semana personal")
+    st.markdown("### 🧩 6) Semana personal")
     st.write(f"Número {sp_p}")
     st.write(parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, "Semana personal"))
 
-    st.markdown("### 7) Día personal")
+    st.markdown("### 🌙 7) Día personal")
     st.write(f"Número {dp_p}")
     st.write(parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, "Día personal"))
 
@@ -692,22 +1235,22 @@ if clave_ingresada:
     st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
 
     st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
-    if num_tel:
+    if telefono.strip():
         st.markdown(f"### 📞 Teléfono — Número {num_tel}")
         st.write(texto_telefono(num_tel))
     else:
         st.info("Si deseas, agrega un teléfono para activar esta sección.")
 
-    if num_dir:
+    if direccion_apto.strip():
         st.markdown(f"### 🏠 Dirección / Apto — Número {num_dir}")
         st.write(texto_hogar(num_dir))
     else:
         st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
 
-    st.markdown("### 8) Arcano mayor de la semana")
+    st.markdown("### 🃏 8) Arcano mayor de la semana")
     st.write(arcano_micro(arc_p))
 
-    st.markdown("### 9) Pináculo (pirámide completa)")
+    st.markdown("### 🏔️ 9) Pináculo (pirámide completa)")
     st.write(f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}")
     st.write(pinaculo_micro(pin_p))
 
@@ -731,12 +1274,12 @@ if clave_ingresada:
     ]
 
     pdf_completa = build_pdf_bytes(
-        f"{APP_TITLE} · Versión Completa · {BRAND}",
+        f"{APP_TITLE} · Lectura completa · {BRAND}",
         secciones_completa
     )
 
     st.download_button(
-        "⬇️ Descargar PDF (Versión Completa)",
+        "⬇️ Descargar PDF (Lectura completa)",
         data=pdf_completa,
         file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
         mime="application/pdf",
