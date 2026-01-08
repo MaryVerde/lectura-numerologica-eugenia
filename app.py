@@ -539,29 +539,9 @@ def incrementar_contador():
     return total
 
 # =====================================================
-# HERO (PORTADA)
-# =====================================================
-st.markdown(
-    f"""
-    <div class="em-hero">
-      <p class="em-hero-title">{APP_TITLE} · {BRAND}</p>
-      <p class="em-hero-sub">
-        Una brújula energética: sobria, profunda y cálida. <br/>
-        <span class="em-muted">Lectura energética consciente · con opción de lectura profunda personalizada.</span>
-      </p>
-      <span class="em-chip">🔮 Claridad</span>
-      <span class="em-chip">🌙 Intuición</span>
-      <span class="em-chip">🧭 Dirección</span>
-      <span class="em-chip">✨ Coherencia</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# =====================================================
 # ENERGÍA MYSTIKA DE EUGENIA (TARJETA DEL DÍA)
 # =====================================================
-st.markdown("### ☀️ Energía Mystika de Eugenia.Hoy")
+st.markdown("## ☀️ Energía Mística del Día")
 st.markdown(
     f"""
     <div class="em-card" style="text-align:center; font-size:1.08rem; line-height:1.7;">
