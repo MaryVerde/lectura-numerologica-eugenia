@@ -544,42 +544,28 @@ from datetime import date
 # 🌞 ENERGÍA MÍSTICA DEL DÍA (bloque limpio y ritual)
 # =====================================================
 
+import streamlit.components.v1 as components
+
 hoy = date.today()
-dia_del_ano = hoy.timetuple().tm_yday  # 1–365
+dia_del_ano = hoy.timetuple().tm_yday
 
-st.markdown(
-    f"""
-    <div class="em-card" style="text-align:center; max-width:520px; margin:auto;">
-        
-        <div style="
-            font-size:0.78rem;
-            letter-spacing:0.14em;
-            text-transform:uppercase;
-            color:#6b5a7a;
-            margin-bottom:6px;
-        ">
-            Energía mística del día · {hoy.strftime('%d/%m/%Y')}
-        </div>
-
-        <div style="
-            font-size:1.05rem;
-            line-height:1.7;
-            margin-top:10px;
-        ">
-            ☀️ <strong>{MENSAJES_MYSTIKOS[dia_del_ano]}</strong>
-        </div>
-
-        <div class="em-muted" style="
-            margin-top:10px;
-            font-size:0.85rem;
-        ">
-            Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
-        </div>
-
+html = f"""
+<div style="font-family: inherit;">
+  <div style="text-align:center; max-width:520px; margin:auto; padding:22px; border-radius:22px; border:1px solid #E3D6ED; background:linear-gradient(135deg,#F6EEF8,#EFE6F5); box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+    <div style="font-size:0.78rem; letter-spacing:0.14em; text-transform:uppercase; color:#6b5a7a; margin-bottom:6px;">
+      Energía mística del día · {hoy.strftime('%d/%m/%Y')}
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    <div style="font-size:1.05rem; line-height:1.7; margin-top:10px;">
+      ☀️ <strong>{MENSAJES_MYSTIKOS.get(dia_del_ano, "Hoy vuelve a tu centro.")}</strong>
+    </div>
+    <div style="margin-top:10px; font-size:0.85rem; color:#6b5a7a;">
+      Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
+    </div>
+  </div>
+</div>
+"""
+
+components.html(html, height=180)
 # =====================================================
 # TEXTO INTRO
 # =====================================================
