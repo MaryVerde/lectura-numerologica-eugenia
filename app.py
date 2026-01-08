@@ -538,22 +538,33 @@ def incrementar_contador():
         pass
     return total
 
-# =====================================================
-# ENERGÍA MYSTIKA DE EUGENIA (TARJETA DEL DÍA)
-# =====================================================
-st.markdown("## ☀️ Energía Mística del Día")
+from datetime import date
+
+# ===============================
+# 🌞 ENERGÍA MÍSTICA DEL DÍA (delicada, ligada al calendario)
+# ===============================
+
+hoy = date.today()
+dia_del_ano = hoy.timetuple().tm_yday  # 1–365
+
 st.markdown(
     f"""
-    <div class="em-card" style="text-align:center; font-size:1.08rem; line-height:1.7;">
-      🔮 <strong>{mensaje_Mystikos_del_dia()}</strong>
-      <div class="em-muted" style="margin-top:10px;">
-        Un pulso energético para centrarte y alinearte hoy.
-      </div>
+    <div class="em-card" style="text-align:center;">
+        <div style="font-size:0.85rem; letter-spacing:0.5px; text-transform:uppercase; color:#6b5a7a;">
+            Energía mística del día · {hoy.strftime('%d/%m/%Y')}
+        </div>
+
+        <div style="margin-top:12px; font-size:1.05rem; line-height:1.7;">
+            ☀️ <strong>{MENSAJES_MYSTIKOS[dia_del_ano]}</strong>
+        </div>
+
+        <div class="em-muted" style="margin-top:10px; font-size:0.9rem;">
+            Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
+        </div>
     </div>
     """,
     unsafe_allow_html=True
 )
-
 # =====================================================
 # TEXTO INTRO
 # =====================================================
