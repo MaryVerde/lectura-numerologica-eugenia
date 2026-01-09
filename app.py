@@ -1,21 +1,4 @@
-Conversación abierta. 1 mensaje no leído.
 
-Ir al contenido
-Uso de Gmail con lectores de pantalla
-
-1 de 18.984
-(sin asunto)
-Recibidos
-Resumir este correo
-
-Mary Eugenia Arocha <verde.mary@gmail.com>
-Archivos adjuntos
-19:20 (hace 0 minutos)
-para mí
-
- Un archivo adjunto
-  •  Analizados por Gmail
-rocio.facchiano@educacionit.com
 import unicodedata
 import re
 from datetime import date, datetime
@@ -2016,5 +1999,4 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-app1_corregido.py
-Mostrando app1_corregido.py.
+
