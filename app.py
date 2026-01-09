@@ -1,5 +1,3 @@
-
-import os
 import unicodedata
 import re
 from datetime import date, datetime
@@ -7,7 +5,7 @@ from io import BytesIO
 import textwrap
 import hmac
 import hashlib
-
+import os
 import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
@@ -1419,6 +1417,10 @@ def texto_compatibilidad_profunda(numero: int) -> str:
     )
 # =====================================================
 # =====================================================
+# (Premium) Teléfono/Hogar: se calculan dentro del bloque Premium (desbloqueado)
+# =====================================================
+
+# =====================================================
 # PINÁCULO (LARGO)
 # =====================================================
 def pinaculo_micro(pin: dict) -> str:
@@ -1534,7 +1536,7 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     core = digest[:16]
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
-
+# =====================================================
 # =====================================================
 # INPUTS
 # =====================================================
@@ -1558,8 +1560,7 @@ with col2:
 calcular = st.button("✨ Recibir mi lectura")
 hoy = date.today()
 
-# =====================================================
-# CÁLCULOS BASE
+# CÁLCULOS
 # =====================================================
 es = esencia(fecha_nac)
 mis = sendero_vida(fecha_nac)
@@ -1574,25 +1575,36 @@ arc = arcano_semanal()
 pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
-# -----------------------------------------------------
-# Compatibilidad helpers
-# -----------------------------------------------------
-COMPATIBILIDAD_EXPRESS = {1: '1: Chispa y liderazgo. Uno inicia, el otro empuja: cuiden no competir.\nClaves: respeto, turnos para decidir.\nCuando se alinean, avanzan rápido.\nRiesgo: orgullo; antídoto: acuerdos claros.', 2: "2: Unión y cooperación. Se leen emocionalmente y se sostienen.\nClaves: ternura, paciencia y escucha.\nCuando hay tensión, vuelvan a lo simple: '¿qué necesitas?'\nRiesgo: dependencia; antídoto: límites amorosos.", 3: '3: Comunicación y alegría. La relación se alimenta de palabras y juego.\nClaves: humor, planes creativos.\nHablen pronto antes de acumular.\nRiesgo: dispersión; antídoto: rutinas ligeras.', 4: '4: Base y construcción. Es pareja para construir hogar/proyecto.\nClaves: constancia, responsabilidad compartida.\nEl amor crece con hechos diarios.\nRiesgo: rigidez; antídoto: flexibilidad y cariño.', 5: '5: Libertad y cambio. Atracción intensa, ritmo móvil.\nClaves: espacio personal, aventuras juntos.\nSi se sienten atrapados, se apaga.\nRiesgo: inestabilidad; antídoto: pactos y honestidad.', 6: '6: Amor-cuidado. Se eligen para acompañarse y sanar.\nClaves: detalles, familia, contención.\nCuando se alinean, es hogar emocional.\nRiesgo: exceso de carga; antídoto: balance y autocuidado.', 7: '7: Profundidad y verdad. Vínculo mental/espiritual fuerte.\nClaves: silencio cómodo, conversación profunda.\nNecesitan tiempos de soledad sin drama.\nRiesgo: frialdad; antídoto: expresar afecto.', 8: '8: Propósito y poder. Pareja para metas y expansión material.\nClaves: visión, disciplina, dinero con acuerdos.\nSi compiten, chocan; si cooperan, prosperan.\nRiesgo: control; antídoto: respeto y ternura.', 9: '9: Amor que libera. Cierres, perdón y evolución juntos.\nClaves: compasión, madurez, soltar pasado.\nSe potencian cuando sirven a algo más grande.\nRiesgo: nostalgia; antídoto: presente y proyectos.', 11: '11: Vínculo espejo. Intensidad, intuición y verdad.\nClaves: transparencia total y cuidado emocional.\nLa relación despierta propósito.\nRiesgo: nerviosismo; antídoto: calma y espiritualidad.', 22: '22: Pareja constructora. Sueños grandes + estructura.\nClaves: plan, equipo, visión práctica.\nPueden lograr mucho si se organizan.\nRiesgo: presión; antídoto: descanso y ternura.', 33: '33: Amor-maestro. Compasión, servicio y sanación.\nClaves: protegerse, no salvarse.\nEl vínculo florece cuando hay equilibrio.\nRiesgo: sacrificio; antídoto: límites y reciprocidad.'}
-COMPATIBILIDAD_PROFUNDA = {1: "Compatibilidad 1 — liderazgo compartido sin competencia.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 2: "Compatibilidad 2 — unión, cooperación y ternura madura.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 3: "Compatibilidad 3 — comunicación, creatividad y alegría consciente.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 4: "Compatibilidad 4 — construcción, estabilidad y compromiso.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 5: "Compatibilidad 5 — libertad, cambio y honestidad.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 6: "Compatibilidad 6 — hogar emocional, cuidado y belleza cotidiana.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 7: "Compatibilidad 7 — profundidad, verdad y espiritualidad.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 8: "Compatibilidad 8 — propósito, poder y prosperidad con ética.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 9: "Compatibilidad 9 — cierres, perdón y amor que libera.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 11: "Compatibilidad 11 — intuición elevada y vínculo espejo.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 22: "Compatibilidad 22 — construcción de legado y visión práctica.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia.", 33: "Compatibilidad 33 — amor maestro, servicio y sanación.\nEsta energía describe cómo se encuentran y qué viene a enseñarles el vínculo.\nPrimero: miren el patrón central (lo que repiten cuando hay tensión).\nSegundo: honren el talento natural de la relación (lo que sale fácil cuando están bien).\nTercero: definan una práctica semanal para sostener el amor (no solo sentirlo).\nEn lo emocional: nombren lo que sienten antes de discutir lo que piensan.\nEn lo mental: hagan acuerdos de comunicación (horas, tono, límites, reparación).\nEn lo material: el dinero y el orden se hablan; no se adivinan.\nEn lo íntimo: cuiden el ritmo; la presencia vale más que la intensidad.\nCuando aparezca la sombra, no se acusen: describan el patrón y vuelvan al acuerdo.\nSu pregunta guía: '¿qué necesita este vínculo para crecer hoy, no para ganar?'.\nSi hay distancia: vuelvan a lo pequeño (un gesto, un mensaje, una cita simple).\nSi hay conflicto: pidan perdón rápido y reparen con hechos concretos.\nCuando se alinean, esta compatibilidad abre un camino de evolución real para ambos.\nCierre: el amor aquí es una decisión diaria con corazón y coherencia."}
+# =====================================================
+# CÁLCULO · COMPATIBILIDAD (EXPRESS + PREMIUM)
+# =====================================================
 
-def numero_compatibilidad(f1: date, f2: date) -> int:
-    # suma de sendero de vida y reducción conservando maestros
-    total = sendero_vida(f1) + sendero_vida(f2)
-    return reducir_numero(total)
+def numero_compatibilidad(fecha1: date, fecha2: date) -> int:
+    total = (
+        fecha1.day + fecha1.month + fecha1.year +
+        fecha2.day + fecha2.month + fecha2.year
+    )
+    while total > 33:
+        total = sum(int(d) for d in str(total))
+    if total in (11, 22, 33):
+        return total
+    while total > 9:
+        total = sum(int(d) for d in str(total))
+    return total
 
-def texto_compat_express(n: int) -> str:
-    return COMPATIBILIDAD_EXPRESS.get(n, "Compatibilidad no disponible para este número.")
 
-def texto_compat_profunda(n: int) -> str:
-    return COMPATIBILIDAD_PROFUNDA.get(n, "Compatibilidad profunda no disponible para este número.")
+
+
+
+
+
+
+
+
+
 
 # =====================================================
-# MOSTRAR SOLO AL PRESIONAR BOTÓN
+# MOSTRAR ESENCIAL SOLO AL PRESIONAR BOTÓN
 # =====================================================
 if calcular:
     incrementar_contador()
@@ -1618,119 +1630,48 @@ if calcular:
     st.markdown(f"### 🌙 Energía de hoy — Número {dp}")
     st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
 
-    # =====================================================
-    # COMPATIBILIDAD (ESPRÉ)
-    # =====================================================
-    st.markdown("## 💞 Compatibilidad de pareja")
-    cC1, cC2 = st.columns(2)
-    with cC1:
+    st.markdown("### 💡 Pronóstico clave")
+    em_section("Pronóstico esencial del momento", "🧿")
+
+    em_card("Amor y vínculos", "💗", frase_categoria(FRASES_AMOR, ap),
+            "Lectura base para comprender la dinámica afectiva activa.")
+    em_card("Dinero y propósito material", "💰", frase_categoria(FRASES_DINERO, ap),
+            "Señal práctica sobre decisiones, orden y movimiento económico.")
+    em_card("Energía emocional", "🌊", frase_categoria(FRASES_EMOCIONAL, ap),
+            "Clima interno actual y forma consciente de regularlo.")
+    em_card("Protección energética", "🛡️", frase_categoria(FRASES_PROTECCION, ap),
+            "Recomendación para resguardar tu campo energético.")
+
+    # 💞 Compatibilidad Express (4 líneas)
+    st.markdown("### 💞 Compatibilidad de pareja (Express)")
+    activar_comp = st.checkbox("Activar compatibilidad (Express)", value=False, key="comp_express_on")
+    if activar_comp:
         fecha_pareja = st.date_input(
             "Fecha de nacimiento de la otra persona",
             min_value=date(1940, 1, 1),
             max_value=date(2040, 12, 31),
             value=date(1990, 1, 1),
-            key="fecha_pareja"
+            key="fecha_pareja_express",
         )
-    with cC2:
-        st.caption("Basado en la vibración de nacimiento de ambos.")
+        comp_num = compatibilidad_numero(fecha_nac, fecha_pareja)
+        st.markdown(f"**Número de compatibilidad:** {comp_num}")
+        st.markdown(f'<div class="em-card">{compatibilidad_expres(comp_num)}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="em-card em-muted">Activa la casilla para ver la compatibilidad con una fecha de nacimiento.</div>',
+                    unsafe_allow_html=True)
 
-    num_comp = numero_compatibilidad(fecha_nac, fecha_pareja)
-    st.markdown(f"### 🔗 Compatibilidad — Número {num_comp}")
-    st.markdown(f'<div class="em-card">{texto_compat_express(num_comp).replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
-
-    # =====================================================
-    # ACCESO PREMIUM (clave del cliente)
-    # =====================================================
-    with st.expander("🔒 Desbloquear Premium", expanded=False):
-        st.caption("Si tienes tu clave, pégala aquí para activar secciones premium.")
-        clave_ingresada = st.text_input("Clave Premium", type="password", key="clave_premium")
-        clave_esperada = generar_clave_unica(nombre, fecha_nac) if nombre.strip() else None
-        premium_activo = bool(clave_esperada and clave_ingresada and clave_ingresada.strip().upper() == clave_esperada.upper())
-        if premium_activo:
-            st.success("Premium activado ✅")
-        else:
-            st.info("Aún no activo. (Tip: completa tu nombre + fecha para generar tu clave.)")
-
-    if premium_activo:
-        # =====================================================
-        # DATOS PREMIUM (TELÉFONO / HOGAR)
-        # =====================================================
-        st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar (Premium)")
-        cA, cB = st.columns(2)
-        with cA:
-            telefono = st.text_input(
-                "📞 Teléfono (opcional)",
-                value="",
-                placeholder="Ej: +58 412 000 0000",
-                key="telefono_premium"
-            )
-        with cB:
-            direccion_apto = st.text_input(
-                "🏠 Dirección / Apto (opcional)",
-                value="",
-                placeholder="Ej: Torre A, Apto 12B",
-                key="direccion_premium"
-            )
-
-        num_tel = numero_apto(telefono) if telefono.strip() else 0
-        num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-
-        texto_tel = TEXTO_TELEFONO.get(num_tel, "La vibración del teléfono no pudo calcularse correctamente.")
-        texto_dir = TEXTO_HOGAR.get(num_dir, "La vibración del hogar no pudo calcularse correctamente.")
-
-        if telefono.strip():
-            st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
-            st.markdown(f'<div class="em-card">{texto_tel}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="em-card em-muted">📞 Escribe un teléfono para activar esta lectura.</div>', unsafe_allow_html=True)
-
-        if direccion_apto.strip():
-            st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
-            st.markdown(f'<div class="em-card">{texto_dir}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="em-card em-muted">🏠 Escribe una dirección/apto para activar esta lectura.</div>', unsafe_allow_html=True)
-
-        # =====================================================
-        # COMPATIBILIDAD PROFUNDA (PREMIUM)
-        # =====================================================
-        st.markdown("## 💞 Compatibilidad profunda (Premium)")
-        nombre_pareja = st.text_input("Nombre completo de la otra persona (opcional)", value="", max_chars=40, key="nombre_pareja")
-        num_comp2 = num_comp
-        st.markdown(f"### 🌟 Compatibilidad profunda — Número {num_comp2}")
-        st.markdown(f'<div class="em-card">{texto_compat_profunda(num_comp2).replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
-
-        # Extra: energía de nombres
-        if nombre.strip() and nombre_pareja.strip():
-            n1 = numero_nombre(nombre)
-            n2 = numero_nombre(nombre_pareja)
-            n_mix = reducir_numero(n1 + n2)
-            st.markdown(f"### 🧬 Extra: Energía de nombres — {n_mix}")
-            extra = (
-                f"Tu nombre vibra en {n1} y el de tu pareja en {n2}.\n"
-                f"Juntos activan {n_mix}: un tono que se siente en la convivencia, la comunicación y la forma de apoyarse."
-            )
-            st.markdown(f'<div class="em-card">{extra.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
-
-    # =====================================================
-    # PINÁCULO Y ARCANO
-    # =====================================================
+    # Pináculo y Arcano
     st.markdown("### 🏔️ Pináculo (pirámide completa)")
     st.markdown(
-        f"""
-        <div class="em-card">
-          <div class="em-muted">Base: {pin['base']} · Medio: {pin['medio']} · Cima: {pin['cima']}</div>
-          <div style="margin-top:10px;">{pinaculo_micro(pin)}</div>
-        </div>
-        """,
+        f'<div class="em-card"><div class="em-muted">Base: {pin["base"]} · Medio: {pin["medio"]} · Cima: {pin["cima"]}</div>'
+        f'<div style="margin-top:10px;">{pinaculo_micro(pin)}</div></div>',
         unsafe_allow_html=True
     )
 
     st.markdown("### 🃏 Arcano mayor semanal")
     st.markdown(f'<div class="em-card">{arcano_micro(arc)}</div>', unsafe_allow_html=True)
 
-    # =====================================================
-    # PDF (esencial)
-    # =====================================================
+    # PDF (Lectura esencial)
     pdf_resumido = build_pdf_bytes(
         f"{APP_TITLE} · Tu Lectura · {BRAND}",
         [
@@ -1740,7 +1681,7 @@ if calcular:
             ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
             ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
             ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
-            ("Compatibilidad", f"Número {num_comp}\n\n{texto_compat_express(num_comp)}"),
+            ("Pronóstico clave", f"{frase_categoria(FRASES_AMOR, ap)}\n{frase_categoria(FRASES_DINERO, ap)}\n{frase_categoria(FRASES_EMOCIONAL, ap)}\n{frase_categoria(FRASES_PROTECCION, ap)}"),
             ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
             ("Arcano mayor semanal", arcano_micro(arc)),
         ]
@@ -1753,5 +1694,305 @@ if calcular:
         mime="application/pdf",
     )
 
+
 else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
+
+# =====================================================
+# PANEL ADMIN (OCULTO POR PIN)
+# =====================================================
+if ADMIN_PIN:
+    with st.expander("🔐 Eugenia Mystikos (Admin)", expanded=False):
+        pin_ingresado = st.text_input("PIN de administración", type="password", key="pin_admin")
+        if pin_ingresado:
+            if pin_ingresado == ADMIN_PIN:
+                st.success("Acceso concedido ✅")
+                st.info(f"📊 Uso interno · Total activaciones esencial: {leer_contador()}")
+                if nombre.strip():
+                    st.caption("Clave del cliente (según nombre+fecha actuales):")
+                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
+            else:
+                st.error("PIN incorrecto")
+
+# =====================================================
+# VERSIÓN COMPLETA (PAGO) - NO TOCADO EN LÓGICA
+# =====================================================
+st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
+st.markdown("## 💎 Lectura profunda personalizada")
+st.markdown(
+    '<div class="em-card em-muted">Accede a tu lecturs profunda usando tu clave personal. Si tu nombre/fecha no coinciden exactamente con la compra, la clave no validará.</div>',
+    unsafe_allow_html=True
+)
+
+colv1, colv2 = st.columns(2)
+with colv1:
+    nombre_compra = st.text_input(
+        "Nombre (exactamente como en tu compra)",
+        key="nombre_compra",
+        max_chars=40,
+        placeholder="Ej: Eugenia Mistikos"
+    )
+with colv2:
+    fecha_compra = st.date_input(
+        "Fecha de nacimiento (como en tu compra)",
+        key="fecha_compra",
+        min_value=date(1940, 1, 1),
+        max_value=date(2040, 12, 31),
+        value=date(1990, 1, 1),
+    )
+
+clave_ingresada = st.text_input(
+    "Introduce tu clave personal",
+    type="password",
+    key="clave_ingresada"
+).strip().upper()
+
+if clave_ingresada:
+    if not nombre_compra.strip():
+        st.warning("Escribe tu nombre tal como aparece en tu compra.")
+        st.stop()
+
+    if not fecha_compra:
+        st.warning("Debes indicar la fecha de nacimiento usada en tu compra.")
+        st.stop()
+
+    clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
+
+    if clave_ingresada != clave_esperada:
+        st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
+        st.stop()
+
+    st.success("Versión completa desbloqueada ✅")
+
+    # =====================================================
+    # 📌 Datos opcionales Premium (Teléfono / Hogar)
+    # =====================================================
+    st.markdown("### 📌 Datos opcionales Premium")
+    cA, cB = st.columns(2)
+    with cA:
+        telefono = st.text_input(
+            "📞 Teléfono (opcional)",
+            value="",
+            placeholder="Ej: +58 412 000 0000",
+            key="telefono_premium"
+        )
+    with cB:
+        direccion_apto = st.text_input(
+            "🏠 Dirección / Apto (opcional)",
+            value="",
+            placeholder="Ej: Torre A, Apto 12B",
+            key="direccion_premium"
+        )
+
+    num_tel = numero_apto(telefono) if telefono.strip() else 0
+    texto_tel = TEXTO_TELEFONO.get(num_tel, "Aún no ingresaste un teléfono válido para calcular su vibración.")
+
+    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
+    texto_dir = TEXTO_HOGAR.get(num_dir, "Aún no ingresaste una dirección/apto válido para calcular su vibración.")
+
+    # =====================================================
+    # 💞 Compatibilidad Premium (fecha + energía de nombres)
+    # =====================================================
+    st.markdown("### 💞 Compatibilidad de pareja (Premium)")
+    cP1, cP2 = st.columns(2)
+    with cP1:
+        nombre_pareja = st.text_input(
+            "Nombre completo de la otra persona (opcional)",
+            max_chars=40,
+            value="",
+            key="nombre_pareja_premium"
+        )
+    with cP2:
+        fecha_pareja_p = st.date_input(
+            "Fecha de nacimiento de la otra persona",
+            min_value=date(1940, 1, 1),
+            max_value=date(2040, 12, 31),
+            value=date(1990, 1, 1),
+            key="fecha_pareja_premium",
+        )
+
+    comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
+    st.markdown(f"**Número de compatibilidad:** {comp_p}")
+    st.markdown(f'<div class="em-card">{COMPATIBILIDAD_PREMIUM.get(comp_p, compatibilidad_expres(comp_p))}</div>', unsafe_allow_html=True)
+
+    if nombre_validado and nombre_pareja.strip():
+        nn1 = numero_nombre(nombre_validado)
+        nn2 = numero_nombre(nombre_pareja)
+        comp_nom = reducir_numero(nn1 + nn2)
+        st.markdown(
+            f'<div class="em-card em-muted">Energía de nombres: {nn1} + {nn2} → <b>{comp_nom}</b>. '
+            f'Esto describe el “clima” comunicacional y la esencia simbólica del vínculo.</div>',
+            unsafe_allow_html=True
+        )
+
+
+
+    nombre_validado = nombre_compra.strip()
+    fecha_validada = fecha_compra
+
+    es_p = esencia(fecha_validada)
+    mis_p = sendero_vida(fecha_validada)
+    vp_p = vida_pasada(fecha_validada)
+
+    ap_p = ano_personal(fecha_validada, hoy.year)
+    mp_p = mes_personal(ap_p, hoy.month)
+    sp_p = semana_personal(mp_p, hoy.isocalendar()[1])
+    dp_p = dia_personal(mp_p, hoy.day)
+
+    arc_p = arcano_semanal()
+    pin_p = pinaculo_piramide(fecha_validada)
+
+    st.markdown("### 📌 Datos opcionales Premium")
+
+    cA, cB = st.columns(2)
+
+    with cA:
+        telefono = st.text_input(
+            "📞 Teléfono (opcional)",
+            value="",
+            placeholder="Ej: +58 412 000 0000",
+            key="telefono_premium"
+        )
+
+    with cB:
+        direccion_apto = st.text_input(
+            "🏠 Dirección / Apto (opcional)",
+            value="",
+            placeholder="Ej: Torre A, Apto 12B",
+            key="direccion_premium"
+        )
+
+    # ─────────────────────────────
+    # Cálculo solo si hay dato
+    # ─────────────────────────────
+    num_tel = numero_apto(telefono) if telefono.strip() else None
+    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else None
+
+    # ─────────────────────────────
+    # Resultados PREMIUM
+    # ─────────────────────────────
+    if num_tel is not None:
+        st.markdown("#### 📞 Vibración del teléfono")
+        st.write(f"*Número:* {num_tel}")
+        st.write(mensaje_vibracion_telefono(num_tel))
+
+    if num_dir is not None:
+        st.markdown("#### 🏠 Vibración de la dirección")
+        st.write(f"*Número:* {num_dir}")
+        st.write(mensaje_vibracion_direccion(num_dir))
+        st.markdown("## 🌙 Secciones Premium")
+
+    st.markdown("### 🌿 1) Esencia")
+    st.write(f"Número {es_p}")
+    st.write(parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, "Esencia"))
+
+    st.markdown("### 🧭 2) Misión / Sendero de vida")
+    st.write(f"Número {mis_p}")
+    st.write(parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, "Misión"))
+
+    st.markdown("### 🕰️ 3) Vida pasada")
+    st.write(f"Número {vp_p}")
+    st.write(parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, "Vida pasada"))
+
+    st.markdown("### 🔥 4) Año personal")
+    st.write(f"Número {ap_p}")
+    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Año personal"))
+
+    st.markdown("### 🗓️ 5) Mes personal")
+    st.write(f"Número {mp_p}")
+    st.write(parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, "Mes personal"))
+
+    st.markdown("### 🧩 6) Semana personal")
+    st.write(f"Número {sp_p}")
+    st.write(parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, "Semana personal"))
+
+    st.markdown("### 🌙 7) Día personal")
+    st.write(f"Número {dp_p}")
+    st.write(parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, "Día personal"))
+
+    st.markdown("## ✨ Premium: Amor, Dinero, Emoción y Protección")
+    st.markdown("### 💗 Amor y vínculos")
+    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos"))
+
+    st.markdown("### 💰 Dinero y prosperidad")
+    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad"))
+
+    st.markdown("### 🌊 Energía emocional")
+    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional"))
+
+    st.markdown("### 🛡️ Protección energética")
+    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
+
+    st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
+
+    if telefono.strip():
+        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
+        st.markdown(f'<div class="em-card">{texto_tel}</div>', unsafe_allow_html=True)
+    else:
+        st.info("Si deseas, agrega un teléfono para activar esta sección.")
+
+    if direccion_apto.strip():
+        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
+        st.markdown(f'<div class="em-card">{texto_dir}</div>', unsafe_allow_html=True)
+    else:
+        st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
+
+    st.markdown("### 🃏 8) Arcano mayor de la semana")
+    st.write(arcano_micro(arc_p))
+
+    st.markdown("### 🏔️ 9) Pináculo (pirámide completa)")
+    st.write(f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}")
+    st.write(pinaculo_micro(pin_p))
+
+    secciones_completa = [
+        ("Datos", f"Nombre: {nombre_validado or '—'}\nFecha de nacimiento: {fecha_validada}\nGenerado: {hoy}"),
+        ("Esencia", f"Número {es_p}\n\n{parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, 'Esencia')}"),
+        ("Misión / Sendero", f"Número {mis_p}\n\n{parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, 'Misión')}"),
+        ("Vida pasada", f"Número {vp_p}\n\n{parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, 'Vida pasada')}"),
+        ("Año personal", f"Número {ap_p}\n\n{parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, 'Año personal')}"),
+        ("Mes personal", f"Número {mp_p}\n\n{parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, 'Mes personal')}"),
+        ("Semana personal", f"Número {sp_p}\n\n{parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, 'Semana personal')}"),
+        ("Día personal", f"Número {dp_p}\n\n{parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, 'Día personal')}"),
+        ("Premium: Amor y vínculos", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos")),
+        ("Premium: Dinero y prosperidad", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad")),
+        ("Premium: Energía emocional", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional")),
+        ("Premium: Protección energética", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética")),
+        ("Teléfono", f"Número {num_tel if num_tel else '—'}\n\n{texto_telefono(num_tel) if num_tel else 'No se ingresó teléfono.'}"),
+        ("Dirección / Apto", f"Número {num_dir if num_dir else '—'}\n\n{texto_hogar(num_dir) if num_dir else 'No se ingresó dirección/apto.'}"),
+        ("Arcano mayor semanal", arcano_micro(arc_p)),
+        ("Pináculo (pirámide completa)", f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}\n\n{pinaculo_micro(pin_p)}"),
+    ]
+
+    pdf_completa = build_pdf_bytes(
+        f"{APP_TITLE} · Lectura completa · {BRAND}",
+        secciones_completa
+    )
+
+    st.download_button(
+        "⬇️ Descargar PDF (Lectura completa)",
+        data=pdf_completa,
+        file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
+        mime="application/pdf",
+    )
+
+st.caption(f"{BRAND} · Lectura Numerológica")
+def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
+    """Compatibilidad base (1–9 + maestros) a partir del Sendero de Vida de ambos."""
+    return reducir_numero(sendero_vida(fecha_a) + sendero_vida(fecha_b))
+
+COMPATIBILIDAD_PREMIUM = {
+    1: "Compatibilidad 1: vínculo de impulso y reinicio. La relación crece con independencia sana, liderazgo compartido y decisiones claras. Eviten competir por el control: aquí funciona el respeto y la admiración mutua. Si hay fricción, suele venir por orgullo o por querer tener la razón. La medicina es simple: acuerdos y acciones, no suposiciones. Cuando se alinean, juntos abren caminos rápido y se vuelven motor el uno del otro.",
+    2: "Compatibilidad 2: vínculo de cooperación y ternura. Se complementan cuando priorizan la escucha, la paciencia y el cuidado emocional. Este lazo pide delicadeza: palabras suaves, ritmos naturales y honestidad afectiva. El riesgo es callar para evitar conflicto y acumular resentimiento. La medicina es hablar a tiempo y sostener acuerdos. Si se cuidan, la relación se vuelve hogar emocional.",
+    3: "Compatibilidad 3: vínculo de alegría y comunicación. Hay chispa mental, humor y creatividad. El riesgo es la dispersión o evitar profundidad. La medicina es coherencia: decir y hacer. Si ordenan su comunicación, juntos expanden proyectos y disfrute.",
+    4: "Compatibilidad 4: vínculo de construcción y compromiso. Es una relación para crear base: hogar, proyecto, estabilidad. Funciona con disciplina y acuerdos claros. El riesgo es la rigidez o sentir que el amor se volvió obligación. La medicina es ternura dentro de la estructura: detalles, reconocimiento y flexibilidad. Si lo hacen, construyen algo duradero.",
+    5: "Compatibilidad 5: vínculo de libertad y cambio. Se activan con movimiento, novedad y evolución. El riesgo es la inestabilidad o huir cuando algo se pone serio. La medicina es libertad con responsabilidad: límites claros y espacios propios. Si se respetan, la relación es aventura consciente y no caos.",
+    6: "Compatibilidad 6: vínculo de amor, cuidado y familia. Hay potencial de sostén y pertenencia. El riesgo es cargarse de más o volverse exigentes. La medicina es equilibrio: cuidar sin control, amar sin sacrificio. Si se eligen con madurez, la relación se armoniza y florece.",
+    7: "Compatibilidad 7: vínculo de profundidad e intimidad espiritual. Se conectan desde lo sutil y lo interno. El riesgo es aislarse o analizar tanto que se apaga la emoción. La medicina es presencia: conversación honesta y tiempo de calidad. Si se abren, el vínculo se vuelve sabio y real.",
+    8: "Compatibilidad 8: vínculo de poder y manifestación. Juntos pueden lograr metas materiales y crecer en abundancia. El riesgo es el control o medir el amor por resultados. La medicina es ética y corazón: acuerdos, transparencia y ternura. Si se alinean, se vuelven un equipo fuerte.",
+    9: "Compatibilidad 9: vínculo de cierre, compasión e integración. La relación viene a sanar y elevar conciencia. El riesgo es cargar historias pasadas o drama. La medicina es honestidad y cierre limpio: soltar lo que pesa y elegir desde amor maduro. Si lo hacen, el vínculo transforma y libera.",
+    11:"Compatibilidad 11: vínculo de inspiración e intuición elevada. Conexión intensa y visión. El riesgo es idealizar o absorber demasiado. La medicina es límites energéticos, comunicación clara y rutina. Si se cuidan, el vínculo inspira y guía.",
+    22:"Compatibilidad 22: vínculo constructor de legado. Potencial para materializar proyectos grandes y dejar huella. El riesgo es la presión y el perfeccionismo. La medicina es plan, paciencia y amor práctico. Si se organizan, construyen algo significativo.",
+    33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
+}
+
+
