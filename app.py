@@ -1,3 +1,21 @@
+Conversación abierta. 1 mensaje no leído.
+
+Ir al contenido
+Uso de Gmail con lectores de pantalla
+
+1 de 18.984
+(sin asunto)
+Recibidos
+Resumir este correo
+
+Mary Eugenia Arocha <verde.mary@gmail.com>
+Archivos adjuntos
+19:20 (hace 0 minutos)
+para mí
+
+ Un archivo adjunto
+  •  Analizados por Gmail
+rocio.facchiano@educacionit.com
 import unicodedata
 import re
 from datetime import date, datetime
@@ -1537,6 +1555,28 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
+def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
+    """Compatibilidad base (1–9 + maestros) a partir del Sendero de Vida de ambos."""
+    return reducir_numero(sendero_vida(fecha_a) + sendero_vida(fecha_b))
+
+COMPATIBILIDAD_PREMIUM = {
+    1: "Compatibilidad 1: vínculo de impulso y reinicio. La relación crece con independencia sana, liderazgo compartido y decisiones claras. Eviten competir por el control: aquí funciona el respeto y la admiración mutua. Si hay fricción, suele venir por orgullo o por querer tener la razón. La medicina es simple: acuerdos y acciones, no suposiciones. Cuando se alinean, juntos abren caminos rápido y se vuelven motor el uno del otro.",
+    2: "Compatibilidad 2: vínculo de cooperación y ternura. Se complementan cuando priorizan la escucha, la paciencia y el cuidado emocional. Este lazo pide delicadeza: palabras suaves, ritmos naturales y honestidad afectiva. El riesgo es callar para evitar conflicto y acumular resentimiento. La medicina es hablar a tiempo y sostener acuerdos. Si se cuidan, la relación se vuelve hogar emocional.",
+    3: "Compatibilidad 3: vínculo de alegría y comunicación. Hay chispa mental, humor y creatividad. El riesgo es la dispersión o evitar profundidad. La medicina es coherencia: decir y hacer. Si ordenan su comunicación, juntos expanden proyectos y disfrute.",
+    4: "Compatibilidad 4: vínculo de construcción y compromiso. Es una relación para crear base: hogar, proyecto, estabilidad. Funciona con disciplina y acuerdos claros. El riesgo es la rigidez o sentir que el amor se volvió obligación. La medicina es ternura dentro de la estructura: detalles, reconocimiento y flexibilidad. Si lo hacen, construyen algo duradero.",
+    5: "Compatibilidad 5: vínculo de libertad y cambio. Se activan con movimiento, novedad y evolución. El riesgo es la inestabilidad o huir cuando algo se pone serio. La medicina es libertad con responsabilidad: límites claros y espacios propios. Si se respetan, la relación es aventura consciente y no caos.",
+    6: "Compatibilidad 6: vínculo de amor, cuidado y familia. Hay potencial de sostén y pertenencia. El riesgo es cargarse de más o volverse exigentes. La medicina es equilibrio: cuidar sin control, amar sin sacrificio. Si se eligen con madurez, la relación se armoniza y florece.",
+    7: "Compatibilidad 7: vínculo de profundidad e intimidad espiritual. Se conectan desde lo sutil y lo interno. El riesgo es aislarse o analizar tanto que se apaga la emoción. La medicina es presencia: conversación honesta y tiempo de calidad. Si se abren, el vínculo se vuelve sabio y real.",
+    8: "Compatibilidad 8: vínculo de poder y manifestación. Juntos pueden lograr metas materiales y crecer en abundancia. El riesgo es el control o medir el amor por resultados. La medicina es ética y corazón: acuerdos, transparencia y ternura. Si se alinean, se vuelven un equipo fuerte.",
+    9: "Compatibilidad 9: vínculo de cierre, compasión e integración. La relación viene a sanar y elevar conciencia. El riesgo es cargar historias pasadas o drama. La medicina es honestidad y cierre limpio: soltar lo que pesa y elegir desde amor maduro. Si lo hacen, el vínculo transforma y libera.",
+    11:"Compatibilidad 11: vínculo de inspiración e intuición elevada. Conexión intensa y visión. El riesgo es idealizar o absorber demasiado. La medicina es límites energéticos, comunicación clara y rutina. Si se cuidan, el vínculo inspira y guía.",
+    22:"Compatibilidad 22: vínculo constructor de legado. Potencial para materializar proyectos grandes y dejar huella. El riesgo es la presión y el perfeccionismo. La medicina es plan, paciencia y amor práctico. Si se organizan, construyen algo significativo.",
+    33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
+}
+
+
+
+
 # =====================================================
 # INPUTS
 # =====================================================
@@ -1976,23 +2016,5 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
-    """Compatibilidad base (1–9 + maestros) a partir del Sendero de Vida de ambos."""
-    return reducir_numero(sendero_vida(fecha_a) + sendero_vida(fecha_b))
-
-COMPATIBILIDAD_PREMIUM = {
-    1: "Compatibilidad 1: vínculo de impulso y reinicio. La relación crece con independencia sana, liderazgo compartido y decisiones claras. Eviten competir por el control: aquí funciona el respeto y la admiración mutua. Si hay fricción, suele venir por orgullo o por querer tener la razón. La medicina es simple: acuerdos y acciones, no suposiciones. Cuando se alinean, juntos abren caminos rápido y se vuelven motor el uno del otro.",
-    2: "Compatibilidad 2: vínculo de cooperación y ternura. Se complementan cuando priorizan la escucha, la paciencia y el cuidado emocional. Este lazo pide delicadeza: palabras suaves, ritmos naturales y honestidad afectiva. El riesgo es callar para evitar conflicto y acumular resentimiento. La medicina es hablar a tiempo y sostener acuerdos. Si se cuidan, la relación se vuelve hogar emocional.",
-    3: "Compatibilidad 3: vínculo de alegría y comunicación. Hay chispa mental, humor y creatividad. El riesgo es la dispersión o evitar profundidad. La medicina es coherencia: decir y hacer. Si ordenan su comunicación, juntos expanden proyectos y disfrute.",
-    4: "Compatibilidad 4: vínculo de construcción y compromiso. Es una relación para crear base: hogar, proyecto, estabilidad. Funciona con disciplina y acuerdos claros. El riesgo es la rigidez o sentir que el amor se volvió obligación. La medicina es ternura dentro de la estructura: detalles, reconocimiento y flexibilidad. Si lo hacen, construyen algo duradero.",
-    5: "Compatibilidad 5: vínculo de libertad y cambio. Se activan con movimiento, novedad y evolución. El riesgo es la inestabilidad o huir cuando algo se pone serio. La medicina es libertad con responsabilidad: límites claros y espacios propios. Si se respetan, la relación es aventura consciente y no caos.",
-    6: "Compatibilidad 6: vínculo de amor, cuidado y familia. Hay potencial de sostén y pertenencia. El riesgo es cargarse de más o volverse exigentes. La medicina es equilibrio: cuidar sin control, amar sin sacrificio. Si se eligen con madurez, la relación se armoniza y florece.",
-    7: "Compatibilidad 7: vínculo de profundidad e intimidad espiritual. Se conectan desde lo sutil y lo interno. El riesgo es aislarse o analizar tanto que se apaga la emoción. La medicina es presencia: conversación honesta y tiempo de calidad. Si se abren, el vínculo se vuelve sabio y real.",
-    8: "Compatibilidad 8: vínculo de poder y manifestación. Juntos pueden lograr metas materiales y crecer en abundancia. El riesgo es el control o medir el amor por resultados. La medicina es ética y corazón: acuerdos, transparencia y ternura. Si se alinean, se vuelven un equipo fuerte.",
-    9: "Compatibilidad 9: vínculo de cierre, compasión e integración. La relación viene a sanar y elevar conciencia. El riesgo es cargar historias pasadas o drama. La medicina es honestidad y cierre limpio: soltar lo que pesa y elegir desde amor maduro. Si lo hacen, el vínculo transforma y libera.",
-    11:"Compatibilidad 11: vínculo de inspiración e intuición elevada. Conexión intensa y visión. El riesgo es idealizar o absorber demasiado. La medicina es límites energéticos, comunicación clara y rutina. Si se cuidan, el vínculo inspira y guía.",
-    22:"Compatibilidad 22: vínculo constructor de legado. Potencial para materializar proyectos grandes y dejar huella. El riesgo es la presión y el perfeccionismo. La medicina es plan, paciencia y amor práctico. Si se organizan, construyen algo significativo.",
-    33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
-}
-
-
+app1_corregido.py
+Mostrando app1_corregido.py.
