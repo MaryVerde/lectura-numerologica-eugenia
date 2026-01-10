@@ -1,13 +1,4 @@
-Conversación abierta. 1 mensaje leído.
 
-Ir al contenido
-Uso de Gmail con lectores de pantalla
-
-Conversaciones
-Estás usando el 6 % de 2.048 GB
-Términos · Privacidad · Política del programa
-Última actividad de la cuenta: hace 1 minuto
-Se está utilizando actualmente en 2 ubicaciones más · Detalles
 import os
 import unicodedata
 import re
@@ -2053,5 +2044,5 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-app_eugenia_corregido.py
-Mostrando app_eugenia_corregido.py.
+
+
