@@ -1,4 +1,3 @@
-
 import unicodedata
 import re
 from datetime import date, datetime
