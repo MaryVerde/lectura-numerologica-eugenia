@@ -1,12 +1,27 @@
-import os
+Ninguno seleccionado
+
+Ir al contenido
+Uso de Gmail con lectores de pantalla
+
+Conversaciones
+yo
+(sin asunto)
+ 
+Archivo adjunto:
+app1_corregido_dia-1.py
+18:57
+Estás usando el 6 % de 2.048 GB
+Términos · Privacidad · Política del programa
+Última actividad de la cuenta: hace 28 minutos
+Detalles
 import unicodedata
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 import textwrap
 import hmac
 import hashlib
-
+import os
 import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
@@ -513,6 +528,17 @@ def get_secret(key: str, default=None):
 APP_SECRET = get_secret("APP_SECRET")
 ADMIN_PIN = get_secret("ADMIN_PIN")
 
+# =============================
+# ZONA HORARIA (para evitar desfase de día en Streamlit Cloud / servidores UTC)
+# Puedes fijar TZ_OFFSET_HOURS en secrets (ej: -4 para Venezuela).
+# =============================
+TZ_OFFSET_HOURS = int(get_secret("TZ_OFFSET_HOURS", "-4"))
+
+def now_local() -> datetime:
+    """Fecha/hora local aproximada usando un offset fijo (evita que el 'día' salga corrido)."""
+    return datetime.utcnow() + timedelta(hours=TZ_OFFSET_HOURS)
+
+
 if not APP_SECRET:
     st.error("❌ Falta APP_SECRET. Ve a Settings → Secrets y agrega APP_SECRET.")
     st.stop()
@@ -544,42 +570,28 @@ from datetime import date
 # 🌞 ENERGÍA MÍSTICA DEL DÍA (bloque limpio y ritual)
 # =====================================================
 
-hoy = date.today()
-dia_del_ano = hoy.timetuple().tm_yday  # 1–365
+import streamlit.components.v1 as components
 
-st.markdown(
-    f"""
-    <div class="em-card" style="text-align:center; max-width:520px; margin:auto;">
-        
-        <div style="
-            font-size:0.78rem;
-            letter-spacing:0.14em;
-            text-transform:uppercase;
-            color:#6b5a7a;
-            margin-bottom:6px;
-        ">
-            Energía mística del día · {hoy.strftime('%d/%m/%Y')}
-        </div>
+hoy = now_local().date()
+dia_del_ano = hoy.timetuple().tm_yday
 
-        <div style="
-            font-size:1.05rem;
-            line-height:1.7;
-            margin-top:10px;
-        ">
-            ☀️ <strong>{MENSAJES_MYSTIKOS[dia_del_ano]}</strong>
-        </div>
-
-        <div class="em-muted" style="
-            margin-top:10px;
-            font-size:0.85rem;
-        ">
-            Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
-        </div>
-
+html = f"""
+<div style="font-family: inherit;">
+  <div style="text-align:center; max-width:520px; margin:auto; padding:22px; border-radius:22px; border:1px solid #E3D6ED; background:linear-gradient(135deg,#F6EEF8,#EFE6F5); box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+    <div style="font-size:0.78rem; letter-spacing:0.14em; text-transform:uppercase; color:#6b5a7a; margin-bottom:6px;">
+      Energía mística del día · {hoy.strftime('%d/%m/%Y')}
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    <div style="font-size:1.05rem; line-height:1.7; margin-top:10px;">
+      ☀️ <strong>{MENSAJES_MYSTIKOS.get(dia_del_ano, "Hoy vuelve a tu centro.")}</strong>
+    </div>
+    <div style="margin-top:10px; font-size:0.85rem; color:#6b5a7a;">
+      Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
+    </div>
+  </div>
+</div>
+"""
+
+components.html(html, height=180)
 # =====================================================
 # TEXTO INTRO
 # =====================================================
@@ -677,7 +689,7 @@ def dia_personal(mes_p: int, dia_hoy: int) -> int:
     return reducir_numero(mes_p + dia_hoy)
 
 def arcano_semanal() -> int:
-    semana = date.today().isocalendar()[1]
+    semana = now_local().date().isocalendar()[1]
     return (semana % 22) + 1
 
 def pinaculo_piramide(fecha: date) -> dict:
@@ -819,21 +831,621 @@ def parrafo_premium_categoria(ap: int, mp: int, sp: int, dp: int, categoria: str
 # =====================================================
 # TEXTOS PREMIUM PROPIOS (TELÉFONO / HOGAR)
 # =====================================================
+TEXTO_TELEFONO = {
+    1: (
+        "Tu número de teléfono vibra en 1, una energía de iniciativa y liderazgo.\n"
+        "Las llamadas activan decisiones rápidas y comienzos importantes.\n"
+        "Es un número que impulsa a tomar la palabra sin rodeos.\n"
+        "Cuidado con la impulsividad o el tono autoritario.\n"
+        "La clave es comunicar con claridad y propósito.\n"
+        "Cuando lideras desde la conciencia, la comunicación fluye."
+    ),
+    2: (
+        "Tu número de teléfono vibra en 2, una energía de cooperación y escucha.\n"
+        "Las conversaciones buscan acuerdos, apoyo y entendimiento mutuo.\n"
+        "Es ideal para mediación, vínculos y trabajo en equipo.\n"
+        "Puede haber tendencia a callar por evitar conflicto.\n"
+        "La clave es expresar lo que sientes sin perder armonía.\n"
+        "La comunicación consciente fortalece los vínculos."
+    ),
+    3: (
+        "Tu número de teléfono vibra en 3, energía de expresión y creatividad.\n"
+        "Las llamadas activan ideas, contactos y movimiento social.\n"
+        "Favorece conversaciones ligeras, inspiradoras y expansivas.\n"
+        "Riesgo de dispersión o hablar sin profundidad.\n"
+        "La clave es enfocar el mensaje.\n"
+        "Cuando comunicas con intención, tu voz inspira."
+    ),
+    4: (
+        "Tu número de teléfono vibra en 4, energía de orden y estructura.\n"
+        "Las llamadas se orientan a temas prácticos y concretos.\n"
+        "Favorece acuerdos claros, compromisos y organización.\n"
+        "Puede sentirse rígido o poco flexible.\n"
+        "La clave es abrir espacio a la escucha.\n"
+        "La comunicación firme y clara genera estabilidad."
+    ),
+    5: (
+        "Tu número de teléfono vibra en 5, energía de cambio y movimiento.\n"
+        "Las llamadas traen novedades, viajes y oportunidades inesperadas.\n"
+        "Favorece la adaptabilidad y la negociación.\n"
+        "Puede generar inestabilidad o exceso de estímulos.\n"
+        "La clave es no dispersarte.\n"
+        "Comunicar con conciencia ordena el cambio."
+    ),
+    6: (
+        "Tu número de teléfono vibra en 6, energía de cuidado y responsabilidad.\n"
+        "Las llamadas suelen vincularse con familia, trabajo y compromiso.\n"
+        "Favorece conversaciones protectoras y empáticas.\n"
+        "Riesgo de cargar problemas ajenos.\n"
+        "La clave es poner límites sanos.\n"
+        "La comunicación equilibrada cuida sin desgastarte."
+    ),
+    7: (
+        "Tu número de teléfono vibra en 7, energía de introspección y análisis.\n"
+        "Las llamadas invitan a reflexionar antes de hablar.\n"
+        "Favorece conversaciones profundas y selectivas.\n"
+        "Puede generar distancia o silencio prolongado.\n"
+        "La clave es compartir lo que piensas.\n"
+        "Comunicar desde la verdad interna fortalece tu voz."
+    ),
+    8: (
+        "Tu número de teléfono vibra en 8, energía de poder y concreción.\n"
+        "Las llamadas se asocian a trabajo, decisiones y autoridad.\n"
+        "Favorece negociaciones y temas materiales.\n"
+        "Riesgo de control o dureza verbal.\n"
+        "La clave es liderar con ética.\n"
+        "La comunicación consciente sostiene tu poder."
+    ),
+    9: (
+        "Tu número de teléfono vibra en 9, energía de cierre y conciencia.\n"
+        "Las llamadas traen mensajes importantes de liberación.\n"
+        "Favorece conversaciones empáticas y sanadoras.\n"
+        "Puede haber cansancio emocional.\n"
+        "La clave es no absorberlo todo.\n"
+        "Comunicar con compasión eleva la vibración."
+    ),
+    11: (
+        "Tu número de teléfono vibra en 11, energía maestra de intuición.\n"
+        "Las llamadas activan mensajes clave y señales importantes.\n"
+        "Favorece la inspiración y la guía.\n"
+        "Puede generar nerviosismo o sobrecarga mental.\n"
+        "La clave es bajar la información a tierra.\n"
+        "La comunicación consciente canaliza tu visión."
+    ),
+    22: (
+        "Tu número de teléfono vibra en 22, energía maestra de construcción.\n"
+        "Las llamadas están ligadas a proyectos grandes y responsabilidad.\n"
+        "Favorece acuerdos de largo alcance.\n"
+        "Puede sentirse peso o exigencia.\n"
+        "La clave es delegar y ordenar.\n"
+        "Comunicar con estructura sostiene grandes logros."
+    ),
+    33: (
+        "Tu número de teléfono vibra en 33, energía maestra de servicio.\n"
+        "Las llamadas activan ayuda, enseñanza y acompañamiento.\n"
+        "Favorece mensajes compasivos y orientadores.\n"
+        "Riesgo de sacrificio excesivo.\n"
+        "La clave es cuidarte al comunicar.\n"
+        "La palabra consciente se vuelve sanadora."
+    ),
+}
+
+
 def texto_telefono(numero: int) -> str:
-    return (
-        f"Tu número de teléfono vibra en {numero} y describe la forma en que tu energía se proyecta cuando te comunicas.\n\n"
-        "Esta vibración influye en llamadas clave, negociaciones, respuestas, contactos y oportunidades que llegan a tu vida.\n\n"
-        "Si notas retrasos, confusión o ‘ruido’, no siempre es externo: muchas veces es una señal de ajustar la claridad y el enfoque.\n\n"
-        "Tu llave práctica es simple: decir lo esencial, poner límites y sostener coherencia en lo que pides y lo que aceptas."
+    return TEXTO_TELEFONO.get(
+        numero,
+        "La vibración del teléfono no pudo ser interpretada con claridad."
     )
 
+# =====================================================
+# HOGAR / DIRECCIÓN — DEFINICIONES (PREMIUM)
+# =====================================================
+
+TEXTO_HOGAR = {
+    1: (
+        "La vibración 1 en el hogar habla de independencia y nuevos comienzos.\n"
+        "Es un espacio que impulsa iniciativa, decisiones propias y liderazgo.\n"
+        "Puede sentirse solitario si no hay propósito claro.\n"
+        "Conviene activar orden, intención y metas visibles.\n"
+        "El hogar pide acción consciente, no dispersión.\n"
+        "Cuando se honra esta energía, se fortalece la autonomía interna."
+    ),
+    2: (
+        "La vibración 2 en el hogar enfatiza unión, cooperación y contención emocional.\n"
+        "Es un espacio sensible al clima emocional de quienes lo habitan.\n"
+        "Favorece vínculos, diálogo y apoyo mutuo.\n"
+        "Puede generar dependencia si no hay límites claros.\n"
+        "El equilibrio llega con armonía y respeto.\n"
+        "Un hogar 2 pide cuidado, escucha y suavidad."
+    ),
+    3: (
+        "La vibración 3 activa expresión, creatividad y movimiento interno.\n"
+        "Es un hogar que necesita comunicación y alegría.\n"
+        "Favorece reuniones, ideas y dinamismo.\n"
+        "El desorden emocional puede reflejarse físicamente.\n"
+        "Conviene sostener rutinas mínimas para estabilizar la energía.\n"
+        "Cuando fluye bien, el hogar se vuelve inspirador."
+    ),
+    4: (
+        "La vibración 4 aporta estructura, estabilidad y base sólida.\n"
+        "Es un hogar que sostiene procesos largos y compromiso.\n"
+        "Favorece disciplina, constancia y sensación de seguridad.\n"
+        "Puede sentirse rígido si no se flexibiliza.\n"
+        "El orden consciente es clave para su equilibrio.\n"
+        "Aquí se construye a largo plazo."
+    ),
+    5: (
+        "La vibración 5 trae cambio, movimiento y necesidad de libertad.\n"
+        "Es un hogar inquieto, con entradas y salidas constantes.\n"
+        "Favorece adaptación y experiencias nuevas.\n"
+        "Puede generar inestabilidad si no hay centro.\n"
+        "Conviene crear anclajes energéticos claros.\n"
+        "El hogar pide flexibilidad con conciencia."
+    ),
+    6: (
+        "La vibración 6 está ligada al cuidado, la familia y la responsabilidad.\n"
+        "Es un hogar protector, contenedor y emocionalmente fuerte.\n"
+        "Favorece vínculos afectivos y sentido de pertenencia.\n"
+        "Puede sobrecargar a quien cuida de todos.\n"
+        "El equilibrio llega al repartir responsabilidades.\n"
+        "Un hogar 6 sana cuando hay reciprocidad."
+    ),
+    7: (
+        "La vibración 7 invita a introspección y silencio interior.\n"
+        "Es un hogar que pide momentos de soledad y reflexión.\n"
+        "Favorece estudio, espiritualidad y conexión interna.\n"
+        "Puede aislar si no se equilibra con lo social.\n"
+        "Conviene respetar los tiempos de retiro.\n"
+        "Aquí se ordena la mente y el espíritu."
+    ),
+    8: (
+        "La vibración 8 activa poder personal y estructura material.\n"
+        "Es un hogar que refleja logros, responsabilidades y metas.\n"
+        "Favorece enfoque, dirección y autoridad interna.\n"
+        "Puede generar tensión si todo se vuelve control.\n"
+        "El equilibrio surge al unir propósito y bienestar.\n"
+        "El hogar sostiene el crecimiento consciente."
+    ),
+    9: (
+        "La vibración 9 habla de cierre, limpieza y liberación emocional.\n"
+        "Es un hogar que invita a soltar lo viejo.\n"
+        "Favorece procesos de sanación y perdón.\n"
+        "Puede remover memorias profundas.\n"
+        "Conviene acompañar los cierres con intención.\n"
+        "Aquí se prepara un nuevo comienzo."
+    ),
+    11: (
+        "La vibración 11 eleva la sensibilidad y la percepción.\n"
+        "Es un hogar altamente energético y emocional.\n"
+        "Favorece intuición, inspiración y conciencia.\n"
+        "Puede generar sobreestimulación si no hay orden.\n"
+        "El equilibrio llega con anclaje y rutina.\n"
+        "Un hogar 11 pide coherencia interna."
+    ),
+    22: (
+        "La vibración 22 sostiene construcción consciente y propósito elevado.\n"
+        "Es un hogar que materializa proyectos importantes.\n"
+        "Favorece estabilidad con visión a largo plazo.\n"
+        "Puede sentirse exigente si no hay descanso.\n"
+        "Conviene equilibrar acción y cuidado.\n"
+        "Aquí se construye legado."
+    ),
+    33: (
+        "La vibración 33 es servicio, amor consciente y entrega.\n"
+        "Es un hogar que sostiene a otros emocionalmente.\n"
+        "Favorece compasión, contención y guía.\n"
+        "Puede generar desgaste si no hay autocuidado.\n"
+        "El equilibrio nace al cuidarse para cuidar.\n"
+        "Un hogar 33 sana cuando hay límites amorosos."
+    ),
+}
+
 def texto_hogar(numero: int) -> str:
-    return (
-        f"La vibración del hogar/dirección marca {numero} y afecta descanso, estabilidad emocional y sensación de seguridad.\n\n"
-        "El hogar amplifica lo interno: si el ambiente está armonizado, te recarga; si no, drena energía sin que lo notes.\n\n"
-        "Esta vibración se equilibra con orden, limpieza, límites y rutinas suaves que te devuelvan paz.\n\n"
-        "La clave no es perfección: es intención. Un hogar alineado sostiene tu progreso y tu claridad."
+    return TEXTO_HOGAR.get(
+        numero,
+        "La vibración del hogar no pudo determinarse con claridad. "
+        "Revisa los datos ingresados o ajusta la información para obtener una lectura precisa."
     )
+
+
+# =====================================================
+# COMPATIBILIDAD DE PAREJA — EXPRES (NO PREMIUM)
+# Basada SOLO en fecha de nacimiento
+# =====================================================
+
+COMPATIBILIDAD_EXPRES = {
+    1: (
+        "Relación basada en iniciativa y empuje mutuo.\n"
+        "Ambos necesitan respetar la independencia.\n"
+        "La clave está en no competir entre sí.\n"
+        "Cuando cooperan, avanzan con fuerza."
+    ),
+    2: (
+        "Relación de apoyo, sensibilidad y cooperación.\n"
+        "Existe una fuerte necesidad de estar juntos.\n"
+        "La clave es no perder la individualidad.\n"
+        "El vínculo crece con cuidado emocional."
+    ),
+    3: (
+        "Relación dinámica, comunicativa y creativa.\n"
+        "El diálogo es el cuerpo del vínculo.\n"
+        "Necesitan expresar emociones con claridad.\n"
+        "Cuando se escuchan, la relación florece."
+    ),
+    4: (
+        "Relación que busca estabilidad y compromiso.\n"
+        "Se construye paso a paso.\n"
+        "La clave es flexibilizar sin perder estructura.\n"
+        "Juntos pueden crear una base sólida."
+    ),
+    5: (
+        "Relación marcada por cambio y movimiento.\n"
+        "Necesitan libertad y experiencias compartidas.\n"
+        "El reto es sostener continuidad.\n"
+        "La relación crece con acuerdos claros."
+    ),
+    6: (
+        "Relación protectora y orientada al cuidado.\n"
+        "Existe sentido de familia y pertenencia.\n"
+        "El reto es no sobrecargarse emocionalmente.\n"
+        "El amor se sostiene con equilibrio."
+    ),
+    7: (
+        "Relación introspectiva y profunda.\n"
+        "Ambos necesitan espacios personales.\n"
+        "La clave es respetar silencios.\n"
+        "La conexión se fortalece desde la conciencia."
+    ),
+    8: (
+        "Relación intensa y orientada a objetivos.\n"
+        "Existe ambición y empuje conjunto.\n"
+        "El reto es no caer en control.\n"
+        "El vínculo se equilibra con sensibilidad."
+    ),
+    9: (
+        "Relación de cierre, sanación y aprendizaje.\n"
+        "Vínculo que transforma profundamente.\n"
+        "Puede remover emociones pasadas.\n"
+        "El amor crece al soltar lo viejo."
+    ),
+    11: (
+        "Relación altamente sensible e intuitiva.\n"
+        "Existe conexión energética fuerte.\n"
+        "El reto es anclarse a lo concreto.\n"
+        "La relación pide coherencia emocional."
+    ),
+    22: (
+        "Relación con propósito y visión compartida.\n"
+        "Juntos construyen algo significativo.\n"
+        "El reto es no cargar demasiado peso.\n"
+        "El vínculo crece con organización."
+    ),
+    33: (
+        "Relación de entrega y servicio mutuo.\n"
+        "Existe amor profundo y compasivo.\n"
+        "El reto es cuidar la energía personal.\n"
+        "El vínculo sana cuando hay límites."
+    ),
+}
+
+# =====================================================
+# COMPATIBILIDAD DE PAREJA — EXPRES (NO PREMIUM)
+# Basada SOLO en fecha de nacimiento
+# =====================================================
+
+COMPATIBILIDAD_EXPRES = {
+    1: (
+        "Relación basada en iniciativa y empuje mutuo.\n"
+        "Ambos necesitan respetar la independencia.\n"
+        "La clave está en no competir entre sí.\n"
+        "Cuando cooperan, avanzan con fuerza."
+    ),
+    2: (
+        "Relación de apoyo, sensibilidad y cooperación.\n"
+        "Existe una fuerte necesidad de estar juntos.\n"
+        "La clave es no perder la individualidad.\n"
+        "El vínculo crece con cuidado emocional."
+    ),
+    3: (
+        "Relación dinámica, comunicativa y creativa.\n"
+        "El diálogo es el cuerpo del vínculo.\n"
+        "Necesitan expresar emociones con claridad.\n"
+        "Cuando se escuchan, la relación florece."
+    ),
+    4: (
+        "Relación que busca estabilidad y compromiso.\n"
+        "Se construye paso a paso.\n"
+        "La clave es flexibilizar sin perder estructura.\n"
+        "Juntos pueden crear una base sólida."
+    ),
+    5: (
+        "Relación marcada por cambio y movimiento.\n"
+        "Necesitan libertad y experiencias compartidas.\n"
+        "El reto es sostener continuidad.\n"
+        "La relación crece con acuerdos claros."
+    ),
+    6: (
+        "Relación protectora y orientada al cuidado.\n"
+        "Existe sentido de familia y pertenencia.\n"
+        "El reto es no sobrecargarse emocionalmente.\n"
+        "El amor se sostiene con equilibrio."
+    ),
+    7: (
+        "Relación introspectiva y profunda.\n"
+        "Ambos necesitan espacios personales.\n"
+        "La clave es respetar silencios.\n"
+        "La conexión se fortalece desde la conciencia."
+    ),
+    8: (
+        "Relación intensa y orientada a objetivos.\n"
+        "Existe ambición y empuje conjunto.\n"
+        "El reto es no caer en control.\n"
+        "El vínculo se equilibra con sensibilidad."
+    ),
+    9: (
+        "Relación de cierre, sanación y aprendizaje.\n"
+        "Vínculo que transforma profundamente.\n"
+        "Puede remover emociones pasadas.\n"
+        "El amor crece al soltar lo viejo."
+    ),
+    11: (
+        "Relación altamente sensible e intuitiva.\n"
+        "Existe conexión energética fuerte.\n"
+        "El reto es anclarse a lo concreto.\n"
+        "La relación pide coherencia emocional."
+    ),
+    22: (
+        "Relación con propósito y visión compartida.\n"
+        "Juntos construyen algo significativo.\n"
+        "El reto es no cargar demasiado peso.\n"
+        "El vínculo crece con organización."
+    ),
+    33: (
+        "Relación de entrega y servicio mutuo.\n"
+        "Existe amor profundo y compasivo.\n"
+        "El reto es cuidar la energía personal.\n"
+        "El vínculo sana cuando hay límites."
+    ),
+}
+
+def texto_compatibilidad_expres(numero: int) -> str:
+    return COMPATIBILIDAD_EXPRES.get(
+        numero,
+        "No se pudo determinar la compatibilidad expres con claridad."
+    )
+# =====================================================
+# COMPATIBILIDAD DE PAREJA — PROFUNDA (PREMIUM)
+# Basada en FECHA DE NACIMIENTO
+# =====================================================
+
+COMPATIBILIDAD_PROFUNDA = {
+
+    1: (
+        "Esta relación se construye desde la iniciativa y la fuerza personal.\n"
+        "Ambos sienten el impulso de avanzar y liderar.\n"
+        "Existe admiración mutua cuando se respetan los espacios.\n"
+        "El reto aparece cuando ninguno quiere ceder.\n"
+        "La relación pide reconocer al otro sin competir.\n"
+        "El amor crece cuando hay apoyo y no imposición.\n"
+        "Es un vínculo que necesita objetivos compartidos.\n"
+        "La admiración sostiene el deseo.\n"
+        "La independencia es una base, no una amenaza.\n"
+        "Cuando se acompañan, avanzan con más claridad.\n"
+        "La relación florece con respeto.\n"
+        "El orgullo debe transformarse en cooperación.\n"
+        "Ambos aprenden a liderar juntos.\n"
+        "El amor se fortalece con reconocimiento.\n"
+        "La unión se consolida cuando hay propósito común."
+    ),
+
+    2: (
+        "Esta relación se basa en la sensibilidad y el acompañamiento emocional.\n"
+        "Existe una fuerte necesidad de cercanía.\n"
+        "Ambos perciben profundamente al otro.\n"
+        "La relación busca cooperación y apoyo mutuo.\n"
+        "El riesgo es perder la individualidad.\n"
+        "El amor crece cuando hay equilibrio entre dar y recibir.\n"
+        "Es un vínculo que se nutre del cuidado.\n"
+        "La ternura es un lenguaje central.\n"
+        "La relación se resiente si uno se anula.\n"
+        "La clave está en apoyarse sin depender.\n"
+        "El vínculo se fortalece con diálogo emocional.\n"
+        "La unión es suave, pero profunda.\n"
+        "Ambos aprenden a sostenerse.\n"
+        "El amor se expresa en gestos pequeños.\n"
+        "La relación prospera con armonía consciente."
+    ),
+
+    3: (
+        "Esta relación se construye a través de la comunicación consciente.\n"
+        "El vínculo necesita palabra, expresión y diálogo constante.\n"
+        "Ambos se estimulan mental y emocionalmente.\n"
+        "La creatividad es un puente de unión.\n"
+        "Cuando callan lo que sienten, surge distancia.\n"
+        "El cuerpo de la relación es la conversación.\n"
+        "Existe potencial para alegría compartida.\n"
+        "También puede aparecer dispersión emocional.\n"
+        "El vínculo mejora al expresar necesidades reales.\n"
+        "No se trata de hablar más, sino de hablar con verdad.\n"
+        "La relación pide escucha activa.\n"
+        "Cuando se comunican desde el corazón, crecen.\n"
+        "El humor sana tensiones.\n"
+        "La relación florece con autenticidad.\n"
+        "El amor se sostiene en la palabra clara."
+    ),
+
+    4: (
+        "Esta relación busca estabilidad, orden y compromiso.\n"
+        "Ambos necesitan seguridad emocional.\n"
+        "El vínculo se construye paso a paso.\n"
+        "La constancia es una base importante.\n"
+        "El riesgo es caer en rigidez.\n"
+        "La relación crece cuando hay flexibilidad.\n"
+        "El amor se expresa en hechos concretos.\n"
+        "Ambos valoran la lealtad.\n"
+        "El vínculo se fortalece con acuerdos claros.\n"
+        "La rutina puede ser sostén o desgaste.\n"
+        "La clave es renovar sin destruir.\n"
+        "El compromiso une profundamente.\n"
+        "La relación se vuelve sólida con confianza.\n"
+        "Ambos aprenden a sostenerse en el tiempo.\n"
+        "El amor se consolida con coherencia."
+    ),
+
+    5: (
+        "Esta relación está marcada por el cambio y la libertad.\n"
+        "Ambos necesitan movimiento.\n"
+        "El vínculo se alimenta de experiencias compartidas.\n"
+        "La rutina debilita la conexión.\n"
+        "El reto es sostener continuidad emocional.\n"
+        "La relación florece con acuerdos claros.\n"
+        "Existe curiosidad mutua.\n"
+        "La atracción se renueva con novedad.\n"
+        "El riesgo es la inestabilidad.\n"
+        "La libertad necesita responsabilidad.\n"
+        "El amor crece cuando hay confianza.\n"
+        "Ambos aprenden a elegir conscientemente.\n"
+        "La relación se expande con flexibilidad.\n"
+        "El vínculo se fortalece con honestidad.\n"
+        "El amor se sostiene con compromiso libre."
+    ),
+
+    6: (
+        "Esta relación se basa en el cuidado y la protección.\n"
+        "Existe una fuerte energía de hogar.\n"
+        "Ambos buscan contención emocional.\n"
+        "El amor se expresa en responsabilidad afectiva.\n"
+        "El riesgo es sobrecargarse.\n"
+        "La relación necesita equilibrio.\n"
+        "Cuidar no es controlar.\n"
+        "El vínculo se fortalece con ternura.\n"
+        "La familia y el entorno pesan.\n"
+        "El amor madura con límites sanos.\n"
+        "Ambos aprenden a dar sin agotarse.\n"
+        "La relación florece con reciprocidad.\n"
+        "El compromiso es profundo.\n"
+        "La unión se nutre del respeto.\n"
+        "El amor se sostiene con cuidado consciente."
+    ),
+
+    7: (
+        "Esta relación es introspectiva y profunda.\n"
+        "Existe conexión espiritual.\n"
+        "Ambos necesitan espacios personales.\n"
+        "El silencio también comunica.\n"
+        "El riesgo es el aislamiento.\n"
+        "La relación crece con comprensión.\n"
+        "No todo se expresa con palabras.\n"
+        "El vínculo se fortalece con confianza.\n"
+        "La conexión es sutil pero intensa.\n"
+        "El amor pide paciencia.\n"
+        "Ambos aprenden a respetar procesos internos.\n"
+        "La unión se afina con conciencia.\n"
+        "El vínculo se profundiza con honestidad.\n"
+        "La relación madura lentamente.\n"
+        "El amor se sostiene desde la verdad interior."
+    ),
+
+    8: (
+        "Esta relación es intensa y orientada a objetivos.\n"
+        "Existe ambición compartida.\n"
+        "Ambos buscan crecer.\n"
+        "El poder puede unir o separar.\n"
+        "El reto es evitar luchas de control.\n"
+        "La relación florece con respeto mutuo.\n"
+        "El amor se fortalece con equilibrio emocional.\n"
+        "La unión pide sensibilidad.\n"
+        "El éxito compartido une.\n"
+        "La relación se debilita sin empatía.\n"
+        "Ambos aprenden a liderar juntos.\n"
+        "El vínculo madura con conciencia.\n"
+        "El amor necesita humanidad.\n"
+        "La relación se equilibra con humildad.\n"
+        "El vínculo prospera con coherencia."
+    ),
+
+    9: (
+        "Esta relación es profundamente transformadora.\n"
+        "Remueve memorias emocionales.\n"
+        "Existe aprendizaje mutuo.\n"
+        "El vínculo invita a sanar.\n"
+        "El reto es soltar el pasado.\n"
+        "La relación pide compasión.\n"
+        "El amor crece con perdón.\n"
+        "No es una relación ligera.\n"
+        "La unión cierra ciclos.\n"
+        "Ambos evolucionan.\n"
+        "El vínculo se profundiza con aceptación.\n"
+        "La relación libera cargas emocionales.\n"
+        "El amor se vuelve consciente.\n"
+        "El vínculo transforma a ambos.\n"
+        "La unión deja huella."
+    ),
+
+    11: (
+        "Esta relación es altamente sensible e intuitiva.\n"
+        "Existe conexión energética fuerte.\n"
+        "Ambos perciben emociones profundas.\n"
+        "El vínculo es inspirador.\n"
+        "El reto es sostener lo práctico.\n"
+        "La relación florece con coherencia.\n"
+        "La intuición guía el vínculo.\n"
+        "El amor es sutil.\n"
+        "La relación puede ser intensa.\n"
+        "Ambos deben cuidarse emocionalmente.\n"
+        "El vínculo pide equilibrio.\n"
+        "La unión inspira crecimiento.\n"
+        "La relación se fortalece con verdad.\n"
+        "El amor es profundo.\n"
+        "La conexión es espiritual."
+    ),
+
+    22: (
+        "Esta relación tiene propósito y visión compartida.\n"
+        "Ambos sienten misión conjunta.\n"
+        "El vínculo busca construir algo duradero.\n"
+        "El reto es no cargar demasiado.\n"
+        "La relación pide organización.\n"
+        "El amor crece con estructura.\n"
+        "La unión se fortalece con metas claras.\n"
+        "El compromiso es profundo.\n"
+        "Ambos se apoyan.\n"
+        "El vínculo se consolida con paciencia.\n"
+        "La relación madura con esfuerzo consciente.\n"
+        "El amor se sostiene en hechos.\n"
+        "La unión deja legado.\n"
+        "El vínculo se fortalece con coherencia.\n"
+        "La relación construye futuro."
+    ),
+
+    33: (
+        "Esta relación es de amor profundo y servicio mutuo.\n"
+        "Existe compasión intensa.\n"
+        "Ambos sienten responsabilidad emocional.\n"
+        "El amor es incondicional.\n"
+        "El reto es no sacrificarse en exceso.\n"
+        "La relación pide límites sanos.\n"
+        "El vínculo sana.\n"
+        "La unión es transformadora.\n"
+        "El amor es generoso.\n"
+        "Ambos deben cuidarse.\n"
+        "La relación florece con equilibrio.\n"
+        "El vínculo se fortalece con conciencia.\n"
+        "La unión eleva.\n"
+        "El amor es profundo.\n"
+        "La relación es sanadora."
+    ),
+}
+
+def texto_compatibilidad_profunda(numero: int) -> str:
+    return COMPATIBILIDAD_PROFUNDA.get(
+        numero,
+        "Compatibilidad profunda no disponible para este número."
+    )
+# =====================================================
+# =====================================================
+# (Premium) Teléfono/Hogar: se calculan dentro del bloque Premium (desbloqueado)
+# =====================================================
 
 # =====================================================
 # PINÁCULO (LARGO)
@@ -952,6 +1564,7 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
+# =====================================================
 # INPUTS
 # =====================================================
 st.markdown("### 🗓️ Tus datos")
@@ -972,9 +1585,8 @@ with col2:
     )
 
 calcular = st.button("✨ Recibir mi lectura")
-hoy = date.today()
+hoy = now_local().date()
 
-# =====================================================
 # CÁLCULOS
 # =====================================================
 es = esencia(fecha_nac)
@@ -991,6 +1603,34 @@ pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
 
 # =====================================================
+# CÁLCULO · COMPATIBILIDAD (EXPRESS + PREMIUM)
+# =====================================================
+
+def numero_compatibilidad(fecha1: date, fecha2: date) -> int:
+    total = (
+        fecha1.day + fecha1.month + fecha1.year +
+        fecha2.day + fecha2.month + fecha2.year
+    )
+    while total > 33:
+        total = sum(int(d) for d in str(total))
+    if total in (11, 22, 33):
+        return total
+    while total > 9:
+        total = sum(int(d) for d in str(total))
+    return total
+
+
+
+
+
+
+
+
+
+
+
+
+# =====================================================
 # MOSTRAR ESENCIAL SOLO AL PRESIONAR BOTÓN
 # =====================================================
 if calcular:
@@ -1001,13 +1641,6 @@ if calcular:
 
     st.markdown(f"### 🔥 Año personal ({hoy.year}) — Número {ap}")
     st.markdown(f'<div class="em-card">{lectura_resumida(ap)}</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="em-card em-muted">'
-        "Este año funciona como tu campo de experiencia principal: ordena decisiones, cierres y oportunidades. "
-        "Si actúas alineada con esta vibración, la vida se vuelve más clara: menos fricción, más coherencia, y un rumbo interno más firme."
-        "</div>",
-        unsafe_allow_html=True
-    )
 
     st.markdown(f"### 🌿 Esencia — Número {es}")
     st.markdown(f'<div class="em-card">{lectura_resumida(es)}</div>', unsafe_allow_html=True)
@@ -1025,54 +1658,49 @@ if calcular:
     st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
 
     st.markdown("### 💡 Pronóstico clave")
-
-    st.markdown("### 💡 Pronóstico clave")
     em_section("Pronóstico esencial del momento", "🧿")
 
-    em_card(
-                "Amor y vínculos",
-                "💗",
-                frase_categoria(FRASES_AMOR, ap),
-                "Lectura base para comprender la dinámica afectiva activa."
-            )
+    em_card("Amor y vínculos", "💗", frase_categoria(FRASES_AMOR, ap),
+            "Lectura base para comprender la dinámica afectiva activa.")
+    em_card("Dinero y propósito material", "💰", frase_categoria(FRASES_DINERO, ap),
+            "Señal práctica sobre decisiones, orden y movimiento económico.")
+    em_card("Energía emocional", "🌊", frase_categoria(FRASES_EMOCIONAL, ap),
+            "Clima interno actual y forma consciente de regularlo.")
+    em_card("Protección energética", "🛡️", frase_categoria(FRASES_PROTECCION, ap),
+            "Recomendación para resguardar tu campo energético.")
 
-    em_card(
-                "Dinero y propósito material",
-                "💰",
-                frase_categoria(FRASES_DINERO, ap),
-                "Señal práctica sobre decisiones, orden y movimiento económico."
-            )
+    # 💞 Compatibilidad Express (4 líneas)
+    st.markdown("### 💞 Compatibilidad de pareja (Express)")
+    activar_comp = st.checkbox("Activar compatibilidad (Express)", value=False, key="comp_express_on")
+    if activar_comp:
+        fecha_pareja = st.date_input(
+            "Fecha de nacimiento de la otra persona",
+            min_value=date(1940, 1, 1),
+            max_value=date(2040, 12, 31),
+            value=date(1990, 1, 1),
+            key="fecha_pareja_express",
+        )
+        comp_num = compatibilidad_numero(fecha_nac, fecha_pareja)
+        st.markdown(f"**Número de compatibilidad:** {comp_num}")
+        st.markdown(f'<div class="em-card">{compatibilidad_expres(comp_num)}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="em-card em-muted">Activa la casilla para ver la compatibilidad con una fecha de nacimiento.</div>',
+                    unsafe_allow_html=True)
 
-    em_card(
-                "Energía emocional",
-                "🌊",
-                frase_categoria(FRASES_EMOCIONAL, ap),
-                "Clima interno actual y forma consciente de regularlo."
-            )
-
-    em_card(
-                "Protección energética",
-                "🛡️",
-                frase_categoria(FRASES_PROTECCION, ap),
-                "Recomendación para resguardar tu campo energético."
-            )
-     
+    # Pináculo y Arcano
     st.markdown("### 🏔️ Pináculo (pirámide completa)")
     st.markdown(
-        f"""
-        <div class="em-card">
-          <div class="em-muted">Base: {pin['base']} · Medio: {pin['medio']} · Cima: {pin['cima']}</div>
-          <div style="margin-top:10px;">{pinaculo_micro(pin)}</div>
-        </div>
-        """,
+        f'<div class="em-card"><div class="em-muted">Base: {pin["base"]} · Medio: {pin["medio"]} · Cima: {pin["cima"]}</div>'
+        f'<div style="margin-top:10px;">{pinaculo_micro(pin)}</div></div>',
         unsafe_allow_html=True
     )
 
     st.markdown("### 🃏 Arcano mayor semanal")
     st.markdown(f'<div class="em-card">{arcano_micro(arc)}</div>', unsafe_allow_html=True)
 
+    # PDF (Lectura esencial)
     pdf_resumido = build_pdf_bytes(
-        f"{APP_TITLE} ·  Tu Lectura · {BRAND}",
+        f"{APP_TITLE} · Tu Lectura · {BRAND}",
         [
             ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
             ("Año personal", f"Número {ap}\n\n{lectura_resumida(ap)}"),
@@ -1080,19 +1708,20 @@ if calcular:
             ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
             ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
             ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
-            ("Pronóstico clave",
-             f"{frase_categoria(FRASES_AMOR, ap)}\n{frase_categoria(FRASES_DINERO, ap)}\n{frase_categoria(FRASES_EMOCIONAL, ap)}\n{frase_categoria(FRASES_PROTECCION, ap)}"),
+            ("Pronóstico clave", f"{frase_categoria(FRASES_AMOR, ap)}\n{frase_categoria(FRASES_DINERO, ap)}\n{frase_categoria(FRASES_EMOCIONAL, ap)}\n{frase_categoria(FRASES_PROTECCION, ap)}"),
             ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
             ("Arcano mayor semanal", arcano_micro(arc)),
         ]
     )
 
     st.download_button(
-        "⬇️ Descargar PDF ( Tu Lectura Mystika )",
+        "⬇️ Descargar PDF (Tu Lectura Mystika)",
         data=pdf_resumido,
         file_name=f"Lectura_Numerologica_Esencial_{BRAND}.pdf",
         mime="application/pdf",
     )
+
+
 else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
 
@@ -1162,21 +1791,9 @@ if clave_ingresada:
 
     st.success("Versión completa desbloqueada ✅")
 
-    nombre_validado = nombre_compra.strip()
-    fecha_validada = fecha_compra
-
-    es_p = esencia(fecha_validada)
-    mis_p = sendero_vida(fecha_validada)
-    vp_p = vida_pasada(fecha_validada)
-
-    ap_p = ano_personal(fecha_validada, hoy.year)
-    mp_p = mes_personal(ap_p, hoy.month)
-    sp_p = semana_personal(mp_p, hoy.isocalendar()[1])
-    dp_p = dia_personal(mp_p, hoy.day)
-
-    arc_p = arcano_semanal()
-    pin_p = pinaculo_piramide(fecha_validada)
-
+    # =====================================================
+    # 📌 Datos opcionales Premium (Teléfono / Hogar)
+    # =====================================================
     st.markdown("### 📌 Datos opcionales Premium")
     cA, cB = st.columns(2)
     with cA:
@@ -1195,9 +1812,102 @@ if clave_ingresada:
         )
 
     num_tel = numero_apto(telefono) if telefono.strip() else 0
-    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
+    texto_tel = TEXTO_TELEFONO.get(num_tel, "Aún no ingresaste un teléfono válido para calcular su vibración.")
 
-    st.markdown("## 🌙 Secciones Premium")
+    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
+    texto_dir = TEXTO_HOGAR.get(num_dir, "Aún no ingresaste una dirección/apto válido para calcular su vibración.")
+
+    # =====================================================
+    # 💞 Compatibilidad Premium (fecha + energía de nombres)
+    # =====================================================
+    st.markdown("### 💞 Compatibilidad de pareja (Premium)")
+    cP1, cP2 = st.columns(2)
+    with cP1:
+        nombre_pareja = st.text_input(
+            "Nombre completo de la otra persona (opcional)",
+            max_chars=40,
+            value="",
+            key="nombre_pareja_premium"
+        )
+    with cP2:
+        fecha_pareja_p = st.date_input(
+            "Fecha de nacimiento de la otra persona",
+            min_value=date(1940, 1, 1),
+            max_value=date(2040, 12, 31),
+            value=date(1990, 1, 1),
+            key="fecha_pareja_premium",
+        )
+
+    comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
+    st.markdown(f"**Número de compatibilidad:** {comp_p}")
+    st.markdown(f'<div class="em-card">{COMPATIBILIDAD_PREMIUM.get(comp_p, compatibilidad_expres(comp_p))}</div>', unsafe_allow_html=True)
+
+    if nombre_validado and nombre_pareja.strip():
+        nn1 = numero_nombre(nombre_validado)
+        nn2 = numero_nombre(nombre_pareja)
+        comp_nom = reducir_numero(nn1 + nn2)
+        st.markdown(
+            f'<div class="em-card em-muted">Energía de nombres: {nn1} + {nn2} → <b>{comp_nom}</b>. '
+            f'Esto describe el “clima” comunicacional y la esencia simbólica del vínculo.</div>',
+            unsafe_allow_html=True
+        )
+
+
+
+    nombre_validado = nombre_compra.strip()
+    fecha_validada = fecha_compra
+
+    es_p = esencia(fecha_validada)
+    mis_p = sendero_vida(fecha_validada)
+    vp_p = vida_pasada(fecha_validada)
+
+    ap_p = ano_personal(fecha_validada, hoy.year)
+    mp_p = mes_personal(ap_p, hoy.month)
+    sp_p = semana_personal(mp_p, hoy.isocalendar()[1])
+    dp_p = dia_personal(mp_p, hoy.day)
+
+    arc_p = arcano_semanal()
+    pin_p = pinaculo_piramide(fecha_validada)
+
+    st.markdown("### 📌 Datos opcionales Premium")
+
+    cA, cB = st.columns(2)
+
+    with cA:
+        telefono = st.text_input(
+            "📞 Teléfono (opcional)",
+            value="",
+            placeholder="Ej: +58 412 000 0000",
+            key="telefono_premium"
+        )
+
+    with cB:
+        direccion_apto = st.text_input(
+            "🏠 Dirección / Apto (opcional)",
+            value="",
+            placeholder="Ej: Torre A, Apto 12B",
+            key="direccion_premium"
+        )
+
+    # ─────────────────────────────
+    # Cálculo solo si hay dato
+    # ─────────────────────────────
+    num_tel = numero_apto(telefono) if telefono.strip() else None
+    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else None
+
+    # ─────────────────────────────
+    # Resultados PREMIUM
+    # ─────────────────────────────
+    if num_tel is not None:
+        st.markdown("#### 📞 Vibración del teléfono")
+        st.write(f"*Número:* {num_tel}")
+        st.write(mensaje_vibracion_telefono(num_tel))
+
+    if num_dir is not None:
+        st.markdown("#### 🏠 Vibración de la dirección")
+        st.write(f"*Número:* {num_dir}")
+        st.write(mensaje_vibracion_direccion(num_dir))
+        st.markdown("## 🌙 Secciones Premium")
 
     st.markdown("### 🌿 1) Esencia")
     st.write(f"Número {es_p}")
@@ -1241,15 +1951,16 @@ if clave_ingresada:
     st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
 
     st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
+
     if telefono.strip():
-        st.markdown(f"### 📞 Teléfono — Número {num_tel}")
-        st.write(texto_telefono(num_tel))
+        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
+        st.markdown(f'<div class="em-card">{texto_tel}</div>', unsafe_allow_html=True)
     else:
         st.info("Si deseas, agrega un teléfono para activar esta sección.")
 
     if direccion_apto.strip():
-        st.markdown(f"### 🏠 Dirección / Apto — Número {num_dir}")
-        st.write(texto_hogar(num_dir))
+        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
+        st.markdown(f'<div class="em-card">{texto_dir}</div>', unsafe_allow_html=True)
     else:
         st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
 
@@ -1292,3 +2003,24 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
+    """Compatibilidad base (1–9 + maestros) a partir del Sendero de Vida de ambos."""
+    return reducir_numero(sendero_vida(fecha_a) + sendero_vida(fecha_b))
+
+COMPATIBILIDAD_PREMIUM = {
+    1: "Compatibilidad 1: vínculo de impulso y reinicio. La relación crece con independencia sana, liderazgo compartido y decisiones claras. Eviten competir por el control: aquí funciona el respeto y la admiración mutua. Si hay fricción, suele venir por orgullo o por querer tener la razón. La medicina es simple: acuerdos y acciones, no suposiciones. Cuando se alinean, juntos abren caminos rápido y se vuelven motor el uno del otro.",
+    2: "Compatibilidad 2: vínculo de cooperación y ternura. Se complementan cuando priorizan la escucha, la paciencia y el cuidado emocional. Este lazo pide delicadeza: palabras suaves, ritmos naturales y honestidad afectiva. El riesgo es callar para evitar conflicto y acumular resentimiento. La medicina es hablar a tiempo y sostener acuerdos. Si se cuidan, la relación se vuelve hogar emocional.",
+    3: "Compatibilidad 3: vínculo de alegría y comunicación. Hay chispa mental, humor y creatividad. El riesgo es la dispersión o evitar profundidad. La medicina es coherencia: decir y hacer. Si ordenan su comunicación, juntos expanden proyectos y disfrute.",
+    4: "Compatibilidad 4: vínculo de construcción y compromiso. Es una relación para crear base: hogar, proyecto, estabilidad. Funciona con disciplina y acuerdos claros. El riesgo es la rigidez o sentir que el amor se volvió obligación. La medicina es ternura dentro de la estructura: detalles, reconocimiento y flexibilidad. Si lo hacen, construyen algo duradero.",
+    5: "Compatibilidad 5: vínculo de libertad y cambio. Se activan con movimiento, novedad y evolución. El riesgo es la inestabilidad o huir cuando algo se pone serio. La medicina es libertad con responsabilidad: límites claros y espacios propios. Si se respetan, la relación es aventura consciente y no caos.",
+    6: "Compatibilidad 6: vínculo de amor, cuidado y familia. Hay potencial de sostén y pertenencia. El riesgo es cargarse de más o volverse exigentes. La medicina es equilibrio: cuidar sin control, amar sin sacrificio. Si se eligen con madurez, la relación se armoniza y florece.",
+    7: "Compatibilidad 7: vínculo de profundidad e intimidad espiritual. Se conectan desde lo sutil y lo interno. El riesgo es aislarse o analizar tanto que se apaga la emoción. La medicina es presencia: conversación honesta y tiempo de calidad. Si se abren, el vínculo se vuelve sabio y real.",
+    8: "Compatibilidad 8: vínculo de poder y manifestación. Juntos pueden lograr metas materiales y crecer en abundancia. El riesgo es el control o medir el amor por resultados. La medicina es ética y corazón: acuerdos, transparencia y ternura. Si se alinean, se vuelven un equipo fuerte.",
+    9: "Compatibilidad 9: vínculo de cierre, compasión e integración. La relación viene a sanar y elevar conciencia. El riesgo es cargar historias pasadas o drama. La medicina es honestidad y cierre limpio: soltar lo que pesa y elegir desde amor maduro. Si lo hacen, el vínculo transforma y libera.",
+    11:"Compatibilidad 11: vínculo de inspiración e intuición elevada. Conexión intensa y visión. El riesgo es idealizar o absorber demasiado. La medicina es límites energéticos, comunicación clara y rutina. Si se cuidan, el vínculo inspira y guía.",
+    22:"Compatibilidad 22: vínculo constructor de legado. Potencial para materializar proyectos grandes y dejar huella. El riesgo es la presión y el perfeccionismo. La medicina es plan, paciencia y amor práctico. Si se organizan, construyen algo significativo.",
+    33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
+}
+
+app1_corregido_dia-1.py
+Mostrando app1_corregido_dia-1.py.
