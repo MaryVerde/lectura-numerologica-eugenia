@@ -1,4 +1,3 @@
-
 import os
 import unicodedata
 import re
@@ -1417,6 +1416,25 @@ def texto_compatibilidad_profunda(numero: int) -> str:
         numero,
         "Compatibilidad profunda no disponible para este número."
     )
+# =====================================================
+# CÁLCULO · VIBRACIÓN TELÉFONO Y HOGAR (PREMIUM)
+# =====================================================
+
+# Teléfono
+num_tel = numero_apto(telefono) if telefono.strip() else 0
+texto_tel = (
+    TEXTO_TELEFONO.get(num_tel)
+    if num_tel in TEXTO_TELEFONO
+    else "La vibración del teléfono no pudo calcularse correctamente."
+)
+
+# Hogar / Dirección
+num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
+texto_dir = (
+    TEXTO_HOGAR.get(num_dir)
+    if num_dir in TEXTO_HOGAR
+    else "La vibración del hogar no pudo calcularse correctamente."
+)
 
 
 # =====================================================
@@ -1558,10 +1576,7 @@ with col2:
 calcular = st.button("✨ Recibir mi lectura")
 hoy = date.today()
 
-# =====================================================
-# INPUTS · TELÉFONO Y HOGAR
-# =====================================================
-st.markdown("### 📌 Datos opcionales")
+st.markdown("### 📌 Datos opcionales Premium")
 
 cA, cB = st.columns(2)
 
@@ -1570,30 +1585,17 @@ with cA:
         "📞 Teléfono (opcional)",
         value="",
         placeholder="Ej: +58 412 000 0000",
-        key="telefono"
+        key="telefono_premium"
     )
-    # Teléfono
-num_tel = numero_apto(telefono) if telefono.strip() else 0
-texto_tel = (
-    TEXTO_TELEFONO.get(num_tel)
-    if num_tel in TEXTO_TELEFONO
-    else "La vibración del teléfono no pudo calcularse correctamente."
-)
 
 with cB:
     direccion_apto = st.text_input(
         "🏠 Dirección / Apto (opcional)",
         value="",
         placeholder="Ej: Torre A, Apto 12B",
-        key="direccion"
+        key="direccion_premium"
     )
-    # Hogar / Dirección
-num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-texto_dir = (
-    TEXTO_HOGAR.get(num_dir)
-    if num_dir in TEXTO_HOGAR
-    else "La vibración del hogar no pudo calcularse correctamente."
-)
+
 
 # =====================================================
 # CÁLCULOS
@@ -1610,38 +1612,6 @@ dp = dia_personal(mp, hoy.day)
 arc = arcano_semanal()
 pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
-
-# =====================================================
-# CÁLCULO · VIBRACIÓN TELÉFONO Y HOGAR
-# =====================================================
-num_tel = numero_apto(telefono) if telefono.strip() else 0
-texto_tel = TEXTO_TELEFONO.get(
-    num_tel,
-    "La vibración del teléfono no pudo calcularse correctamente."
-)
-
-num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-texto_dir = TEXTO_HOGAR.get(
-    num_dir,
-    "La vibración del hogar no pudo calcularse correctamente."
-)
-
-# =====================================================
-# CÁLCULO · COMPATIBILIDAD (EXPRESS + PREMIUM)
-# =====================================================
-
-def numero_compatibilidad(fecha1: date, fecha2: date) -> int:
-    total = (
-        fecha1.day + fecha1.month + fecha1.year +
-        fecha2.day + fecha2.month + fecha2.year
-    )
-    while total > 33:
-        total = sum(int(d) for d in str(total))
-    if total in (11, 22, 33):
-        return total
-
-# Alias para coherencia (compatibilidad_numero usado en otros bloques)
-compatibilidad_numero = numero_compatibilidad
 
 # =====================================================
 # MOSTRAR ESENCIAL SOLO AL PRESIONAR BOTÓN
@@ -1671,89 +1641,6 @@ if calcular:
     st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
 
     # =====================================================
-    # MOSTRAR · TELÉFONO Y HOGAR
-    # =====================================================
-    st.markdown("## 📞🏠 Vibraciones personales")
-
-    if telefono.strip():
-        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
-        st.markdown(f"<div class='em-card'>{texto_tel}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div class='em-card em-muted'>Agrega un teléfono para activar esta lectura.</div>", unsafe_allow_html=True)
-
-    if direccion_apto.strip():
-        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
-        st.markdown(f"<div class='em-card'>{texto_dir}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div class='em-card em-muted'>Agrega una dirección para activar esta lectura.</div>", unsafe_allow_html=True)
-
-
-    # =====================================================
-    # 💞 COMPATIBILIDAD DE PAREJA
-    # - Express: sin clave (4 líneas)
-    # - Premium: con clave Premium (15 líneas + extra por nombres)
-    # =====================================================
-    st.markdown("### 💞 Compatibilidad de pareja (Express)")
-    activar_comp = st.checkbox("Activar compatibilidad (Express)", value=False)
-    if activar_comp:
-        colc1, colc2 = st.columns(2)
-        with colc1:
-            fecha_pareja = st.date_input(
-                "Fecha de nacimiento de la otra persona",
-                min_value=date(1940, 1, 1),
-                max_value=date(2040, 12, 31),
-                value=fecha_validada,
-                key="fecha_pareja_express"
-            )
-        with colc2:
-            st.caption("La compatibilidad Express se calcula solo con fechas (nacimiento de ambos).")
-
-        try:
-            comp_num = compatibilidad_numero(fecha_validada, fecha_pareja)
-            st.markdown(f"**Número de compatibilidad:** {comp_num}")
-            st.markdown(f'<div class="em-card">{texto_compatibilidad_express(comp_num)}</div>', unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"No pude calcular la compatibilidad: {e}")
-
-    # Premium (solo si la clave Premium es válida)
-    if es_p:
-        st.markdown("### 💎 Compatibilidad de pareja (Premium)")
-        colp1, colp2 = st.columns(2)
-        with colp1:
-            nombre_pareja = st.text_input(
-                "Nombre completo de la otra persona (opcional)",
-                value="",
-                max_chars=40,
-                key="nombre_pareja_premium"
-            )
-        with colp2:
-            fecha_pareja_p = st.date_input(
-                "Fecha de nacimiento de la otra persona",
-                min_value=date(1940, 1, 1),
-                max_value=date(2040, 12, 31),
-                value=fecha_validada,
-                key="fecha_pareja_premium"
-            )
-
-        try:
-            comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
-            st.markdown(f"**Número de compatibilidad:** {comp_p}")
-            st.markdown(f'<div class="em-card">{texto_compatibilidad_profunda(comp_p)}</div>', unsafe_allow_html=True)
-
-            # Extra por nombres (solo Premium): 3 líneas adicionales
-            if nombre.strip() and nombre_pareja.strip():
-                n1 = numero_nombre(nombre)
-                n2 = numero_nombre(nombre_pareja)
-                nn = reducir_numero(n1 + n2)
-                st.markdown(f"**Energía combinada de nombres:** {nn}")
-                st.markdown(f'<div class="em-card">{lectura_micro(nn)}</div>', unsafe_allow_html=True)
-            else:
-                st.caption("Tip Premium: agrega el nombre de ambos para ver la energía combinada de nombres.")
-        except Exception as e:
-            st.error(f"No pude calcular la compatibilidad Premium: {e}")
-
-
-# =====================================================
     # VIBRACIONES PREMIUM
     # =====================================================
     st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
@@ -2042,4 +1929,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-
