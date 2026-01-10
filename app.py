@@ -1,19 +1,4 @@
-Ninguno seleccionado
 
-Ir al contenido
-Uso de Gmail con lectores de pantalla
-
-Conversaciones
-yo
-(sin asunto)
- 
-Archivo adjunto:
-app1_corregido_dia-1.py
-18:57
-Estás usando el 6 % de 2.048 GB
-Términos · Privacidad · Política del programa
-Última actividad de la cuenta: hace 28 minutos
-Detalles
 import unicodedata
 import re
 from datetime import date, datetime, timedelta
@@ -2022,5 +2007,4 @@ COMPATIBILIDAD_PREMIUM = {
     33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
 }
 
-app1_corregido_dia-1.py
-Mostrando app1_corregido_dia-1.py.
+
