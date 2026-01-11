@@ -147,32 +147,17 @@ button[data-testid="baseButton-primary"] {
 # =====================================================
 # COMPONENTES UI
 # =====================================================
-
 def em_card(titulo: str, icono: str, contenido: str, nota: str = ""):
-    """
-    Tarjeta visual estándar para Express y Premium.
-    Usa únicamente clases que EXISTEN en el CSS (Paso 3).
-    """
     st.markdown(
         f"""
 <div class="em-card">
-  <div style="display:flex; gap:12px; align-items:flex-start;">
-    <div style="font-size:1.4rem; line-height:1;">{icono}</div>
-    <div>
-      <div style="font-weight:700; font-size:1.05rem; color:#3E2A5E;">
-        {titulo}
-      </div>
-      {f'<div class="em-muted">{nota}</div>' if nota else ''}
-    </div>
-  </div>
-  <div style="margin-top:10px;">
-    {contenido}
-  </div>
+  <h4>{icono} {titulo}</h4>
+  <div class="em-muted">{nota}</div>
+  <p>{contenido}</p>
 </div>
 """,
         unsafe_allow_html=True,
     )
-
 
 # =====================================================
 # NORMALIZACIÓN PARA CLAVES (USO: PAGO / TOKENS)
@@ -1717,3 +1702,4 @@ else:
         "🔒 El acceso Premium requiere una clave válida. "
         "Si ya realizaste el pago, ingresa tu clave para desbloquear todo el contenido."
     )
+
