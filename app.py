@@ -1,20 +1,20 @@
 
+import hashlib
+import hmac
 import os
-import unicodedata
 import re
+import textwrap
+import unicodedata
 from datetime import date, datetime
 from io import BytesIO
-import textwrap
-import hmac
-import hashlib
 
 import streamlit as st
+import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
-
 # =====================================================
-# CONFIGURACIÓN GENERAL (PRIMERO EN STREAMLIT)
+# CONFIGURACIÓN GENERAL
 # =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
 BRAND = "Eugenia.Mystikos"
@@ -26,7 +26,7 @@ st.set_page_config(
 )
 
 # =====================================================
-# ESTILO VISUAL (IG-FRIENDLY)
+# ESTILO VISUAL (CSS)
 # =====================================================
 st.markdown("""
 <style>
@@ -108,108 +108,76 @@ button[kind="primary"] {
   color:#3B2F4A;
   line-height:1.6;
 }
+
 .em-card{
   background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
-  padding: 20px 20px;
+  padding: 20px 22px;
   border-radius: 22px;
   border: 1px solid #E3D6ED;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
   margin-bottom: 16px;
 }
-.em-muted{ color:#6b5a7a; font-size:0.92rem; }
+.em-muted{
+  color: #6B5A7A;
+  font-size: 0.92rem;
+  margin-top: 10px;
+}
 .em-sep{
-  height:1px;
+  height: 1px;
   background: linear-gradient(to right, transparent, #C9B6E4, transparent);
   margin: 26px 0;
 }
-.em-kicker{
-  font-size:0.78rem;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  color:#6b5a7a;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
-# =====================================================
-# 2.2 · HERO (encabezado visual) — NO CAMBIA LA LÓGICA
-# Pegar justo después del CSS (2.1) y ANTES de st.title(...)
-# =====================================================
-
-st.markdown(
-    f"""
-    <div class="em-hero">
-        <div class="em-hero-inner">
-            <div class="em-hero-badge">🔮 {BRAND}</div>
-            <div class="em-hero-title">Lectura Numerológica</div>
-            <div class="em-hero-sub">
-                Brújula energética sobria, mística y cálida — para alinear decisiones, hábitos y vínculos.
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-# =====================================================
-# UI Helpers (Tarjetas / Bloques visuales) — PASO 2.3.1
-# =====================================================
+# Helper para tarjetas con estilo Eugenia.Mystikos
 def em_card(titulo: str, icono: str, contenido: str, muted: str = ""):
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <div class="em-card">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                 <div style="font-size:1.25rem;">{icono}</div>
                 <div style="font-weight:700; font-size:1.05rem;">{titulo}</div>
             </div>
             <div style="font-size:1.02rem; line-height:1.7;">{contenido}</div>
-            {f'<div class="em-muted" style="margin-top:10px;">{muted}</div>' if muted else ''}
+            {f'<div class="em-muted">{muted}</div>' if muted else ''}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-def em_section(titulo: str, icono: str = "✨"):
-    st.markdown(f"## {icono} {titulo}")
-
-def em_divider():
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # =====================================================
-# 🌞 ENERGÍA MYSTIKA DE EUGENIA · MENSAJES DEL DÍA (1–365)
+# MENSAJES MYSTIKOS DEL DÍA (1-365)
 # =====================================================
 MENSAJES_MYSTIKOS = {
     1: "Hoy no apresures nada. La energía se ordena cuando eliges presencia en lugar de urgencia.",
     2: "Confía en tu ritmo. No todo florece el mismo día, pero todo responde a la intención correcta.",
     3: "Lo que hoy parece pequeño está sembrando una verdad más grande.",
-    4: "Respira antes de decidir. La claridad llega cuando el cuerpo se relaja.",
-    5: "No te adaptes a lo que te apaga. Ajusta el entorno, no tu esencia.",
-    6: "Hoy es un buen día para poner un límite amoroso.",
-    7: "El silencio también es una respuesta sabia.",
-    8: "Suelta el control: lo verdadero no necesita ser forzado.",
-    9: "Hoy honra lo que ya lograste. Reconocer tu avance cambia la energía.",
-    10: "La coherencia vale más que la velocidad.",
-    11: "Tu sensibilidad es una brújula, no una debilidad.",
-    12: "Escucha lo que incomoda: ahí hay información valiosa.",
-    13: "Cerrar a tiempo también es un acto de amor propio.",
-    14: "Hoy elige con calma, incluso si otros apuran.",
-    15: "No todo merece tu energía. Sé selectiva.",
-    16: "La verdad se sostiene sola. No la justifiques.",
-    17: "Hoy el cuerpo sabe más que la mente.",
-    18: "Avanza un paso real, no diez imaginarios.",
-    19: "Tu intuición está clara cuando no la discutes.",
-    20: "Orden externo, paz interna.",
-    21: "Hoy se afloja una carga que no era tuya.",
-    22: "Confía: lo que se acomoda hoy libera futuro.",
-    23: "No te traiciones para evitar conflicto.",
-    24: "La energía responde a la honestidad.",
-    25: "Descansar también es avanzar.",
-    26: "Hoy elige lo simple. Ahí está la fuerza.",
-    27: "No rescates procesos ajenos.",
-    28: "Tu claridad inspira sin que hables.",
-    29: "Hoy es mejor decir menos y sentir más.",
-    30: "La estabilidad se construye con decisiones pequeñas.",
-    31: "Cierra el mes soltando expectativas irreales.",
+    4: "La estructura no es cárcel, es sostén. Hoy organiza tu espacio para liberar tu mente.",
+    5: "El cambio es la única constante. No te resistas al movimiento, fluye con la curiosidad.",
+    6: "Vuelve al centro del corazón. Hoy el equilibrio nace de cuidar tus vínculos más cercanos.",
+    7: "El silencio es una respuesta. Regálate un momento de pausa para escuchar tu propia voz.",
+    8: "Tu poder personal reside en la coherencia. Actúa hoy según lo que realmente valoras.",
+    9: "Suelta lo que ya cumplió su ciclo. Para que algo nuevo llegue, debe haber espacio.",
+    10: "Un nuevo comienzo se asoma. Confía en tu capacidad de reinventarte hoy.",
+    11: "Tu intuición está afinada. No busques fuera lo que tu sabiduría interna ya te está susurrando.",
+    12: "Mira las cosas desde otro ángulo. La flexibilidad mental abre puertas que antes no veías.",
+    13: "Transformar es morir a lo viejo para nacer a lo auténtico. No temas a la metamorfosis.",
+    14: "La moderación es tu aliada. Encuentra el punto medio entre el hacer y el ser.",
+    15: "Observa tus sombras sin juicio. Reconocerlas es el primer paso para integrarlas.",
+    16: "Lo que se derrumba libera terreno. No llores las ruinas, celebra el espacio para lo nuevo.",
+    17: "La esperanza es una dirección, no una espera. Camina hoy hacia tu propia luz.",
+    18: "Tus sueños hablan. Presta atención a los mensajes que surgen del inconsciente.",
+    19: "Brilla con luz propia. No necesitas permiso para ocupar tu lugar en el mundo.",
+    20: "Hoy es un día de cosecha interna. Reconoce cuánto has crecido en este tiempo.",
+    21: "El éxito es vivir en plenitud. Hoy celebra estar presente y consciente de tu camino.",
+    22: "Tus sueños grandes requieren bases sólidas. Construye hoy con visión y paciencia.",
+    23: "La comunicación es un puente. Elige palabras que construyan y sanen.",
+    24: "El amor empieza por casa. Trátate hoy con la misma ternura que ofreces a los demás.",
+    25: "La introspección te dará la clave. Busca el silencio para encontrar la claridad.",
+    26: "La justicia interna es equilibrio. Sé justo contigo mismo antes de pedir justicia fuera.",
+    27: "Tu voluntad es tu motor. No dejes que las dudas externas apaguen tu determinación.",
+    28: "La paciencia es una forma de fe. Todo llega en el momento en que estás listo para recibirlo.",
+    29: "La sabiduría se encuentra en lo simple. Hoy menos es más.",
+    30: "Tu creatividad pide paso. Exprésate sin miedo al qué dirán.",
+    31: "Cierra este ciclo con gratitud. Todo lo vivido te ha preparado para lo que viene.",
     32: "Hoy tu energía pide enfoque, no dispersión.",
     33: "Elegir paz no es rendirse.",
     34: "No negocies lo esencial.",
@@ -546,6 +514,9 @@ MENSAJES_MYSTIKOS = {
     365: "Cierra el año en coherencia y verdad."
 }
 
+# =====================================================
+# CONTINUACIÓN DE LÓGICA DE MENSAJES
+# =====================================================
 def mensaje_Mystikos_del_dia() -> str:
     """Devuelve el mensaje del día según el día del año (1–365)."""
     dia = datetime.now().timetuple().tm_yday  # 1..365
@@ -576,10 +547,12 @@ COUNTER_FILE = "contador_resumida.txt"
 
 def leer_contador():
     try:
-        with open(COUNTER_FILE, "r", encoding="utf-8") as f:
-            return int(f.read().strip())
+        if os.path.exists(COUNTER_FILE):
+            with open(COUNTER_FILE, "r", encoding="utf-8") as f:
+                return int(f.read().strip())
     except:
-        return 0
+        pass
+    return 0
 
 def incrementar_contador():
     total = leer_contador() + 1
@@ -590,18 +563,14 @@ def incrementar_contador():
         pass
     return total
 
-from datetime import date
-
 # =====================================================
-# 🌞 ENERGÍA MÍSTICA DEL DÍA (bloque limpio y ritual)
+# 🌞 ENERGÍA MÍSTICA DEL DÍA (Bloque visual)
 # =====================================================
-
-import streamlit.components.v1 as components
-
 hoy = date.today()
+hoy_actual = hoy  # alias para evitar confusiones
 dia_del_ano = hoy.timetuple().tm_yday
 
-html = f"""
+html_energia = f"""
 <div style="font-family: inherit;">
   <div style="text-align:center; max-width:520px; margin:auto; padding:22px; border-radius:22px; border:1px solid #E3D6ED; background:linear-gradient(135deg,#F6EEF8,#EFE6F5); box-shadow:0 6px 18px rgba(0,0,0,0.06);">
     <div style="font-size:0.78rem; letter-spacing:0.14em; text-transform:uppercase; color:#6b5a7a; margin-bottom:6px;">
@@ -617,9 +586,10 @@ html = f"""
 </div>
 """
 
-components.html(html, height=180)
+components.html(html_energia, height=180)
+
 # =====================================================
-# TEXTO INTRO
+# TEXTO INTRODUCTORIO
 # =====================================================
 st.markdown(
     """
@@ -641,18 +611,17 @@ st.markdown(
 st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
 
 # =====================================================
-# UTILIDADES NUMEROLÓGICAS
+# UTILIDADES NUMEROLÓGICAS (CÁLCULOS)
 # =====================================================
 MASTER = {11, 22, 33}
 
 def reducir_numero(n: int) -> int:
     n = abs(int(n))
-    if n in MASTER:
-        return n
+    if n == 0: return 0
+    if n in MASTER: return n
     while n > 9:
         n = sum(int(d) for d in str(n))
-        if n in MASTER:
-            return n
+        if n in MASTER: return n
     return n
 
 def normalizar_texto(s: str) -> str:
@@ -673,69 +642,42 @@ TABLA_PITAGORICA = {
 }
 
 def numero_nombre(nombre: str) -> int:
-    total = 0
-    for c in normalizar_texto(nombre):
-        if c.isalpha():
-            total += TABLA_PITAGORICA.get(c, 0)
+    total = sum(TABLA_PITAGORICA.get(char, 0) for char in normalizar_texto(nombre) if char.isalpha())
     return reducir_numero(total)
 
 def sumar_digitos_texto(txt: str) -> int:
     digs = re.findall(r"\d", str(txt))
-    if not digs:
-        return 0
+    if not digs: return 0
     return reducir_numero(sum(int(d) for d in digs))
 
 def numero_apto(apto: str) -> int:
     apto = str(apto).strip()
-    if not apto:
-        return 0
-    if re.search(r"\d", apto):
-        return sumar_digitos_texto(apto)
+    if not apto: return 0
+    if re.search(r"\d", apto): return sumar_digitos_texto(apto)
     return numero_nombre(apto)
 
-def esencia(fecha: date) -> int:
-    return reducir_numero(fecha.day)
+# Funciones de Tiempo y Vibración
+def esencia(f: date) -> int: return reducir_numero(f.day)
+def imagen_externa(f: date) -> int: return reducir_numero(f.month)
+def vida_pasada(f: date) -> int: return reducir_numero(f.year)
+def sendero_vida(f: date) -> int: return reducir_numero(f.day + f.month + f.year)
+def ano_personal(f: date, y: int) -> int: return reducir_numero(f.day + f.month + y)
+def mes_personal(ap: int, m: int) -> int: return reducir_numero(ap + m)
+def semana_personal(mp: int, s: int) -> int: return reducir_numero(mp + s)
+def dia_personal(mp: int, d: int) -> int: return reducir_numero(mp + d)
 
-def vida_pasada(fecha: date) -> int:
-    return reducir_numero(fecha.month)
-
-def sendero_vida(fecha: date) -> int:
-    return reducir_numero(fecha.day + fecha.month + fecha.year)
-
-def ano_personal(fecha: date, year: int) -> int:
-    return reducir_numero(fecha.day + fecha.month + year)
-
-def mes_personal(ano_p: int, mes: int) -> int:
-    return reducir_numero(ano_p + mes)
-
-def semana_personal(mes_p: int, semana_del_ano: int) -> int:
-    return reducir_numero(mes_p + semana_del_ano)
-
-def dia_personal(mes_p: int, dia_hoy: int) -> int:
-    return reducir_numero(mes_p + dia_hoy)
-
-def arcano_semanal() -> int:
-    semana = date.today().isocalendar()[1]
-    return (semana % 22) + 1
-
-def pinaculo_piramide(fecha: date) -> dict:
-    d = reducir_numero(fecha.day)
-    m = reducir_numero(fecha.month)
-    a = reducir_numero(fecha.year)
-
-    p1 = reducir_numero(d + m)
-    p2 = reducir_numero(d + a)
+def pinaculo_piramide(f: date) -> dict:
+    d, m, a = reducir_numero(f.day), reducir_numero(f.month), reducir_numero(f.year)
+    p1, p2 = reducir_numero(d + m), reducir_numero(d + a)
     p3 = reducir_numero(p1 + p2)
-
-    p4 = reducir_numero(p1 + p2)
-    p5 = reducir_numero(p2 + p3)
-
-    p6 = reducir_numero(p4 + p5)
-
-    return {"base": (p1, p2, p3), "medio": (p4, p5), "cima": p6}
-
+    p4 = reducir_numero(m + a)
+    return {"base": (p1, p2, p4), "medio": (p1+p2, p2+p4), "cima": p3}
 
 # =====================================================
+# 📚 BLOQUE COMPLETO DE DICCIONARIOS (Copia aquí tus textos)
+# =====================================================
+
+## =====================================================
 # COMPATIBILIDAD DE PAREJA (EXPRESS / PREMIUM)
 # =====================================================
 COMPAT_EXPRESS = {
@@ -887,6 +829,40 @@ def parrafo_premium_categoria(ap: int, mp: int, sp: int, dp: int, categoria: str
 # =====================================================
 # TEXTOS PREMIUM PROPIOS (TELÉFONO / HOGAR)
 # =====================================================
+
+# -------------------------------------------------
+# FRASE CLAVE (SENDEROS / NÚMEROS BASE)
+# -------------------------------------------------
+FRASE_CLAVE = {
+    1: "Inicia con valentía: tu decisión abre camino.",
+    2: "Escucha y armoniza: tu intuición ordena el vínculo.",
+    3: "Exprésate con verdad: tu voz crea realidad.",
+    4: "Construye con disciplina: lo sólido te sostiene.",
+    5: "Atrévete al cambio: la libertad también es un plan.",
+    6: "Cuida con límites: amor sin sacrificio.",
+    7: "Silencio consciente: claridad antes de actuar.",
+    8: "Merecimiento y poder: sostén tu lugar.",
+    9: "Cierre limpio: suelta para renacer.",
+    11: "Sensibilidad maestra: protege tu energía y elige paz.",
+    22: "Arquitecta del destino: visión + estructura = expansión.",
+    33: "Servicio con límites: amor consciente que transforma."
+}
+
+# -------------------------------------------------
+# TEXTOS PREMIUM POR CATEGORÍA
+# (Puedes ampliar estos textos cuando quieras)
+# -------------------------------------------------
+TEXTOS_PREMIUM = {
+    "Amor y vínculos": FRASES_AMOR,
+    "Dinero y prosperidad": FRASES_DINERO,
+    "Energía emocional": FRASES_EMOCIONAL,
+    "Protección energética": FRASES_PROTECCION,
+    # Para tiempo: usamos los mismos diccionarios como base.
+    "Año personal": FRASES_EMOCIONAL,
+    "Mes personal": FRASES_EMOCIONAL,
+    "Día personal": FRASES_EMOCIONAL,
+}
+
 TEXTO_TELEFONO = {
     1: (
         "Tu número de teléfono vibra en 1, una energía de iniciativa y liderazgo.\n"
@@ -1096,6 +1072,68 @@ TEXTO_HOGAR = {
     ),
 }
 
+# -------------------------------------------------
+# TEXTOS BASE (ESENCIA / IMAGEN / VIDA PASADA / SENDERO)
+# Nota: estos textos son "micro". Puedes personalizarlos a tu estilo.
+# -------------------------------------------------
+TEXTO_ESENCIA = {
+    1:"Esencia 1: iniciativa, liderazgo y decisión.",
+    2:"Esencia 2: sensibilidad, cooperación y armonía.",
+    3:"Esencia 3: comunicación, creatividad y gozo.",
+    4:"Esencia 4: estructura, constancia y orden.",
+    5:"Esencia 5: cambio, libertad y aprendizaje.",
+    6:"Esencia 6: amor, responsabilidad y belleza.",
+    7:"Esencia 7: introspección, estudio y fe.",
+    8:"Esencia 8: poder personal, logro y merecimiento.",
+    9:"Esencia 9: cierre, compasión y servicio.",
+    11:"Esencia 11: intuición elevada y visión.",
+    22:"Esencia 22: construcción grande y propósito.",
+    33:"Esencia 33: guía amorosa y servicio consciente."
+}
+TEXTO_IMAGEN = {
+    1:"Imagen 1: presencia directa; te perciben firme y clara.",
+    2:"Imagen 2: dulzura y escucha; inspiras confianza.",
+    3:"Imagen 3: carisma; tu energía social abre puertas.",
+    4:"Imagen 4: seriedad; transmites estabilidad.",
+    5:"Imagen 5: versatilidad; te ven dinámica y libre.",
+    6:"Imagen 6: calidez; proyectas cuidado y estética.",
+    7:"Imagen 7: misterio; te ven profunda y selectiva.",
+    8:"Imagen 8: autoridad; proyectas fuerza y enfoque.",
+    9:"Imagen 9: humanidad; inspiras empatía.",
+    11:"Imagen 11: magnetismo; conectas por intuición.",
+    22:"Imagen 22: madurez; proyectas capacidad de sostener.",
+    33:"Imagen 33: presencia sanadora; inspiras protección."
+}
+TEXTO_VIDA_PASADA = {
+    1:"Vida pasada 1: independencia; aprender a liderar sin aislarte.",
+    2:"Vida pasada 2: vínculos; aprender a elegir sin perderte.",
+    3:"Vida pasada 3: expresión; aprender a decir lo que sientes.",
+    4:"Vida pasada 4: deber; aprender a flexibilizar el control.",
+    5:"Vida pasada 5: cambio; aprender a comprometerte sin sentir cárcel.",
+    6:"Vida pasada 6: familia; aprender a cuidar sin cargarte.",
+    7:"Vida pasada 7: búsqueda; aprender a confiar en tu intuición.",
+    8:"Vida pasada 8: poder; aprender a usar recursos con ética.",
+    9:"Vida pasada 9: servicio; aprender a cerrar ciclos con paz.",
+    11:"Vida pasada 11: canal; aprender a sostener tu sensibilidad.",
+    22:"Vida pasada 22: gran obra; aprender a construir con calma.",
+    33:"Vida pasada 33: maestría; aprender amor con límites."
+}
+TEXTO_SENDERO_VIDA = {
+    1:"Sendero 1: vienes a abrir caminos y tomar decisiones.",
+    2:"Sendero 2: vienes a armonizar, mediar y conectar.",
+    3:"Sendero 3: vienes a comunicar y crear belleza.",
+    4:"Sendero 4: vienes a construir con método y paciencia.",
+    5:"Sendero 5: vienes a cambiar, viajar y evolucionar.",
+    6:"Sendero 6: vienes a cuidar, enseñar y embellecer.",
+    7:"Sendero 7: vienes a estudiar, profundizar y creer.",
+    8:"Sendero 8: vienes a liderar recursos y sostener poder personal.",
+    9:"Sendero 9: vienes a cerrar ciclos y servir con compasión.",
+    11:"Sendero 11: vienes a inspirar desde la intuición.",
+    22:"Sendero 22: vienes a materializar visión y legado.",
+    33:"Sendero 33: vienes a guiar con amor consciente."
+}
+
+
 def texto_hogar(numero: int) -> str:
     return TEXTO_HOGAR.get(
         numero,
@@ -1181,94 +1219,11 @@ COMPATIBILIDAD_EXPRES = {
         "Existe amor profundo y compasivo.\n"
         "El reto es cuidar la energía personal.\n"
         "El vínculo sana cuando hay límites."
-    ),
-}
-
-# =====================================================
-# COMPATIBILIDAD DE PAREJA — EXPRES (NO PREMIUM)
-# Basada SOLO en fecha de nacimiento
-# =====================================================
-
-COMPATIBILIDAD_EXPRES = {
-    1: (
-        "Relación basada en iniciativa y empuje mutuo.\n"
-        "Ambos necesitan respetar la independencia.\n"
-        "La clave está en no competir entre sí.\n"
-        "Cuando cooperan, avanzan con fuerza."
-    ),
-    2: (
-        "Relación de apoyo, sensibilidad y cooperación.\n"
-        "Existe una fuerte necesidad de estar juntos.\n"
-        "La clave es no perder la individualidad.\n"
-        "El vínculo crece con cuidado emocional."
-    ),
-    3: (
-        "Relación dinámica, comunicativa y creativa.\n"
-        "El diálogo es el cuerpo del vínculo.\n"
-        "Necesitan expresar emociones con claridad.\n"
-        "Cuando se escuchan, la relación florece."
-    ),
-    4: (
-        "Relación que busca estabilidad y compromiso.\n"
-        "Se construye paso a paso.\n"
-        "La clave es flexibilizar sin perder estructura.\n"
-        "Juntos pueden crear una base sólida."
-    ),
-    5: (
-        "Relación marcada por cambio y movimiento.\n"
-        "Necesitan libertad y experiencias compartidas.\n"
-        "El reto es sostener continuidad.\n"
-        "La relación crece con acuerdos claros."
-    ),
-    6: (
-        "Relación protectora y orientada al cuidado.\n"
-        "Existe sentido de familia y pertenencia.\n"
-        "El reto es no sobrecargarse emocionalmente.\n"
-        "El amor se sostiene con equilibrio."
-    ),
-    7: (
-        "Relación introspectiva y profunda.\n"
-        "Ambos necesitan espacios personales.\n"
-        "La clave es respetar silencios.\n"
-        "La conexión se fortalece desde la conciencia."
-    ),
-    8: (
-        "Relación intensa y orientada a objetivos.\n"
-        "Existe ambición y empuje conjunto.\n"
-        "El reto es no caer en control.\n"
-        "El vínculo se equilibra con sensibilidad."
-    ),
-    9: (
-        "Relación de cierre, sanación y aprendizaje.\n"
-        "Vínculo que transforma profundamente.\n"
-        "Puede remover emociones pasadas.\n"
-        "El amor crece al soltar lo viejo."
-    ),
-    11: (
-        "Relación altamente sensible e intuitiva.\n"
-        "Existe conexión energética fuerte.\n"
-        "El reto es anclarse a lo concreto.\n"
-        "La relación pide coherencia emocional."
-    ),
-    22: (
-        "Relación con propósito y visión compartida.\n"
-        "Juntos construyen algo significativo.\n"
-        "El reto es no cargar demasiado peso.\n"
-        "El vínculo crece con organización."
-    ),
-    33: (
-        "Relación de entrega y servicio mutuo.\n"
-        "Existe amor profundo y compasivo.\n"
-        "El reto es cuidar la energía personal.\n"
-        "El vínculo sana cuando hay límites."
-    ),
-}
-
-def texto_compatibilidad_expres(numero: int) -> str:
-    return COMPATIBILIDAD_EXPRES.get(
-        numero,
-        "No se pudo determinar la compatibilidad expres con claridad."
     )
+}
+
+
+  
 # =====================================================
 # COMPATIBILIDAD DE PAREJA — PROFUNDA (PREMIUM)
 # Basada en FECHA DE NACIMIENTO
@@ -1492,52 +1447,7 @@ COMPATIBILIDAD_PROFUNDA = {
         "La relación es sanadora."
     ),
 }
-
-def texto_compatibilidad_profunda(numero: int) -> str:
-    return COMPATIBILIDAD_PROFUNDA.get(
-        numero,
-        "Compatibilidad profunda no disponible para este número."
-    )
-# =====================================================
-# CÁLCULO · VIBRACIÓN TELÉFONO Y HOGAR (PREMIUM)
-# =====================================================
-
-# Teléfono
-num_tel = numero_apto(telefono) if telefono.strip() else 0
-texto_tel = (
-    TEXTO_TELEFONO.get(num_tel)
-    if num_tel in TEXTO_TELEFONO
-    else "La vibración del teléfono no pudo calcularse correctamente."
-)
-
-# Hogar / Dirección
-num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-texto_dir = (
-    TEXTO_HOGAR.get(num_dir)
-    if num_dir in TEXTO_HOGAR
-    else "La vibración del hogar no pudo calcularse correctamente."
-)
-
-
-# =====================================================
-# PINÁCULO (LARGO)
-# =====================================================
-def pinaculo_micro(pin: dict) -> str:
-    b1, b2, b3 = pin["base"]
-    m1, m2 = pin["medio"]
-    cima = pin["cima"]
-    return (
-        "Tu pináculo es un mapa de etapas: muestra cómo se construye tu fortaleza interna en el tiempo.\n\n"
-        f"La base ({b1}, {b2}, {b3}) habla de los aprendizajes que te formaron: patrones familiares, decisiones tempranas y "
-        "la manera en que aprendiste a reaccionar ante la vida. Aquí se ven tus raíces: lo que repites y lo que vienes a sanar.\n\n"
-        f"El nivel medio ({m1}, {m2}) representa la etapa de ajuste y maduración: responsabilidades, pruebas y cambios donde "
-        "se afina tu carácter. Esta fase pide coherencia: elegir mejor, poner límites y sostener decisiones con firmeza.\n\n"
-        f"La cima ({cima}) es la síntesis: lo que emerges a ser cuando integras lecciones sin resentimiento. "
-        "Aquí se marca tu autoridad interna, tu claridad y la capacidad de avanzar con menos desgaste.\n\n"
-        "No es destino fijo: es brújula. Cuando alineas hábitos, vínculos y metas con tu pináculo, la vida se ordena."
-    )
-
-# =====================================================
+ ####=====================================================
 # ARCANOS MAYORES
 # =====================================================
 ARCANOS_RESUMIDOS = {
@@ -1565,61 +1475,97 @@ ARCANOS_RESUMIDOS = {
     22: "Arcano XXII — El Loco.\nInicio libre: confiar es el primer paso, pero con presencia."
 }
 
+## =====================================================
+# 🔍 FUNCIONES DE BÚSQUEDA (CONECTAN CÁLCULOS CON TUS TEXTOS)
+# =====================================================
+
+def obtener_texto_esencia(n: int) -> str:
+    """Busca en tu diccionario TEXTO_ESENCIA."""
+    return TEXTO_ESENCIA.get(n, "Vibración de esencia en proceso de ajuste.")
+
+def obtener_texto_imagen(n: int) -> str:
+    """Busca en tu diccionario TEXTO_IMAGEN."""
+    return TEXTO_IMAGEN.get(n, "Vibración de imagen en proceso de ajuste.")
+
+def obtener_texto_vida_pasada(n: int) -> str:
+    """Busca en tu diccionario TEXTO_VIDA_PASADA."""
+    return TEXTO_VIDA_PASADA.get(n, "Vibración de vida pasada en proceso de ajuste.")
+
+def obtener_texto_sendero(n: int) -> str:
+    """Busca en tu diccionario TEXTO_SENDERO_VIDA."""
+    return TEXTO_SENDERO_VIDA.get(n, "Vibración de sendero en proceso de ajuste.")
+
+def obtener_frase_clave(n: int) -> str:
+    """Busca en tu diccionario FRASE_CLAVE."""
+    return FRASE_CLAVE.get(n, "Frecuencia en resonancia.")
+
 def arcano_micro(arc: int) -> str:
-    return ARCANOS_RESUMIDOS.get(arc, "Mensaje no disponible.")
+    """Busca en tu diccionario ARCANOS_RESUMIDOS o DICCIONARIO_ARCANOS."""
+    # Intentamos buscar en el diccionario de Arcanos que tengas definido
+    return ARCANOS_RESUMIDOS.get(arc, "Mensaje del arcano no disponible.")
+
+def texto_hogar(n: int) -> str:
+    """Busca en tu diccionario TEXTO_HOGAR."""
+    return TEXTO_HOGAR.get(n, "Vibración del hogar no calculada.")
+
 
 # =====================================================
-# PDF helper
+# 💎 FUNCIÓN PREMIUM (BUSCA POR CATEGORÍAS)
 # =====================================================
-def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=LETTER)
-    _, height = LETTER
-    x = 50
-    y = height - 60
+def parrafo_premium_categoria(num, mp, sp, dp, categoria):
+    """
+    Busca en el diccionario TEXTOS_PREMIUM según la categoría solicitada:
+    'Amor y vínculos', 'Dinero y prosperidad', 'Energía emocional', etc.
+    """
+    # Verificamos que el diccionario TEXTOS_PREMIUM exista y tenga la categoría
+    if 'TEXTOS_PREMIUM' in globals() and categoria in TEXTOS_PREMIUM:
+        return TEXTOS_PREMIUM[categoria].get(num, f"Contenido de {categoria} en desarrollo.")
+    return "Análisis detallado en preparación."
 
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(x, y, titulo)
-    y -= 22
+def obtener_compatibilidad_profunda(n: int) -> str:
+    """Busca en tu diccionario COMPATIBILIDAD_PROFUNDA."""
+    return COMPATIBILIDAD_PROFUNDA.get(n, "Texto de compatibilidad no disponible.")
+def obtener_compatibilidad(n: int, tipo="express") -> str:
+    """Busca según el tipo: express, resumen o profunda."""
+    if tipo == "express": return COMPATIBILIDAD_EXPRES.get(n, "")
+    if tipo == "profunda": return COMPATIBILIDAD_PROFUNDA.get(n, "")
+    return ""
 
-    c.setFont("Helvetica", 10)
-    c.drawString(x, y, f"{BRAND} · Generado automáticamente")
-    y -= 18
-
-    def draw_paragraph(text: str, y: int):
-        c.setFont("Helvetica", 11)
-        lines = []
-        for para in str(text).split("\n"):
-            para = para.strip()
-            if not para:
-                lines.append("")
-                continue
-            lines.extend(textwrap.wrap(para, width=95))
-            lines.append("")
-        for ln in lines:
-            if y < 90:
-                c.showPage()
-                y = height - 60
-            c.drawString(x, y, ln)
-            y -= 14
-        return y
-
-    for head, body in secciones:
-        if y < 120:
-            c.showPage()
-            y = height - 60
-        c.setFont("Helvetica-Bold", 13)
-        c.drawString(x, y, head)
-        y -= 18
-        y = draw_paragraph(body, y)
-        y -= 6
-
-    c.save()
-    buffer.seek(0)
-    return buffer.read()
 
 # =====================================================
-# CLAVE (estable, reutilizable infinitamente)
+# DICCIONARIOS ADICIONALES (Los que estaban al final)
+# =====================================================
+ARCANOS_RESUMIDOS = {
+    1:  "Arcano I — El Mago.\nInicio consciente y poder personal: actuar con intención abre caminos reales.",
+    2:  "Arcano II — La Sacerdotisa.\nIntuición y silencio fértil: la respuesta llega cuando escuchas hacia adentro.",
+    3:  "Arcano III — La Emperatriz.\nCreatividad y expansión: nutre lo que amas y crecerá con fuerza y belleza.",
+    4:  "Arcano IV — El Emperador.\nOrden y estructura: los límites sanos sostienen lo que quieres construir.",
+    5:  "Arcano V — El Hierofante.\nAprendizaje y valores: elegir desde la ética evita repetir errores.",
+    6:  "Arcano VI — Los Enamorados.\nElección consciente: coherencia entre deseo, verdad y compromiso.",
+    7:  "Arcano VII — El Carro.\nDirección y avance: disciplina enfocada vence dispersión y dudas.",
+    8:  "Arcano VIII — La Justicia.\nEquilibrio y causa-efecto: ordenar lo pendiente trae claridad y estabilidad.",
+    9:  "Arcano IX — El Ermitaño.\nIntrospección y sabiduría: mirar hacia adentro aclara el camino.",
+    10: "Arcano X — La Rueda de la Fortuna.\nCambio de ciclo: adaptarte a tiempo evita resistencia innecesaria.",
+    11: "Arcano XI — La Fuerza.\nDominio interno: calma consciente por encima del impulso.",
+    12: "Arcano XII — El Colgado.\nNueva perspectiva: soltar control revela soluciones que no veías.",
+    13: "Arcano XIII — La Muerte.\nTransformación profunda: cerrar a tiempo libera energía vital.",
+    14: "Arcano XIV — La Templanza.\nArmonía y ajuste: integrar extremos devuelve equilibrio.",
+    15: "Arcano XV — El Diablo.\nConciencia de ataduras: reconocerlas es el primer paso para liberarte.",
+    16: "Arcano XVI — La Torre.\nRuptura necesaria: cae lo falso para reconstruir con verdad y fuerza.",
+    17: "Arcano XVII — La Estrella.\nEsperanza y guía: fe serena, visión amable y recuperación de confianza.",
+    18: "Arcano XVIII — La Luna.\nSensibilidad emocional: evita decidir desde miedo o confusión.",
+    19: "Arcano XIX — El Sol.\nClaridad y vitalidad: la verdad trae expansión y alegría.",
+    20: "Arcano XX — El Juicio.\nRenacer consciente: responder al llamado interno cambia tu rumbo.",
+    21: "Arcano XXI — El Mundo.\nIntegración y culminación: cierre exitoso y paso al siguiente nivel.",
+    22: "Arcano XXII — El Loco.\nInicio libre: confiar es el primer paso, pero con presencia."
+}
+
+def arcano_micro(arc: int) -> str:
+    """Función de búsqueda para el mensaje del Arcano."""
+    return ARCANOS_RESUMIDOS.get(arc, "Mensaje no disponible por el momento.")
+
+# =====================================================
+# GENERACIÓN DE CLAVE ÚNICA (HMAC/SHA256)
 # =====================================================
 def normalizar_clave_nombre(txt: str) -> str:
     txt = unicodedata.normalize("NFD", str(txt))
@@ -1629,472 +1575,257 @@ def normalizar_clave_nombre(txt: str) -> str:
     return txt
 
 def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
+    """Crea una clave EM-XXXX-XXXX-XXXX-XXXX única para cada persona."""
     nombre_normalizado = normalizar_clave_nombre(nombre_completo)
+    # Usamos APP_SECRET para que la clave sea segura e incuificable
     payload = f"{nombre_normalizado}|{fecha_nac.isoformat()}".encode("utf-8")
     digest = hmac.new(APP_SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
     core = digest[:16]
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
-# INPUTS
+# CONSTRUCTOR DE PDF (REPORTLAB)
 # =====================================================
-st.markdown("### 🗓️ Tus datos")
-col1, col2 = st.columns(2)
-with col1:
-    fecha_nac = st.date_input(
-        "Fecha de nacimiento",
-        min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),
-        value=date(1990, 1, 1),
-    )
-with col2:
-    nombre = st.text_input(
-        "Nombre completo (máx. 40 caracteres)",
-        max_chars=40,
-        value="",
-        placeholder="Ej: Eugenia Mystikos"
-    )
+def build_pdf_bytes(titulo: str, secciones: list[tuple[str, str]]) -> bytes:
+    """Crea el archivo PDF con todas las interpretaciones numerológicas."""
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=LETTER)
+    width, height = LETTER
+    x = 50
+    y = height - 60
 
+    # Título y Branding
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(x, y, titulo)
+    y -= 22
+    c.setFont("Helvetica", 10)
+    c.drawString(x, y, f"{BRAND} · Lectura Energética Personalizada")
+    y -= 18
 
-# -----------------------------------------------------
-# 💞 Compatibilidad de pareja (Express - GRATIS)
-# (Solo fecha de la otra persona. Sin clave.)
-# -----------------------------------------------------
-st.markdown("### 💞 Compatibilidad de pareja (Express · Gratis)")
-activar_compat_express = st.checkbox("Activar compatibilidad (Express)", value=False, key="compat_express_on")
-fecha_pareja_express = None
-if activar_compat_express:
-    fecha_pareja_express = st.date_input(
-        "Fecha de nacimiento de la otra persona",
-        key="fecha_pareja_express",
-        min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),
-        value=date(1990, 1, 1),
-    )
+    def draw_paragraph(text: str, current_y: int):
+        c.setFont("Helvetica", 11)
+        wrapped_lines = []
+        for para in str(text).split("\n"):
+            para = para.strip()
+            if not para:
+                wrapped_lines.append("")
+                continue
+            wrapped_lines.extend(textwrap.wrap(para, width=90))
+            wrapped_lines.append("")
+            
+        for ln in wrapped_lines:
+            if current_y < 80: # Salto de página
+                c.showPage()
+                current_y = height - 60
+            c.drawString(x, current_y, ln)
+            current_y -= 14
+        return current_y
 
-calcular = st.button("✨ Recibir mi lectura")
-hoy = date.today()
+    # Escribir cada sección (Esencia, Pareja, etc.)
+    for head, body in secciones:
+        if y < 120:
+            c.showPage()
+            y = height - 60
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(x, y, head)
+        y -= 18
+        y = draw_paragraph(body, y)
+        y -= 8
 
-st.markdown("### 📌 Datos opcionales Premium")
-
-cA, cB = st.columns(2)
-
-with cA:
-    telefono = st.text_input(
-        "📞 Teléfono (opcional)",
-        value="",
-        placeholder="Ej: +58 412 000 0000",
-        key="telefono_premium"
-    )
-
-with cB:
-    direccion_apto = st.text_input(
-        "🏠 Dirección / Apto (opcional)",
-        value="",
-        placeholder="Ej: Torre A, Apto 12B",
-        key="direccion_premium"
-    )
-
-
+    c.save()
+    buffer.seek(0)
+    return buffer.read()
 # =====================================================
-# CÁLCULOS
-# =====================================================
-es = esencia(fecha_nac)
-mis = sendero_vida(fecha_nac)
-vp = vida_pasada(fecha_nac)
-
-ap = ano_personal(fecha_nac, hoy.year)
-mp = mes_personal(ap, hoy.month)
-sp = semana_personal(mp, hoy.isocalendar()[1])
-dp = dia_personal(mp, hoy.day)
-
-arc = arcano_semanal()
-pin = pinaculo_piramide(fecha_nac)
-num_nombre = numero_nombre(nombre) if nombre.strip() else 0
-
-# =====================================================
-# CÁLCULO · COMPATIBILIDAD (EXPRESS + PREMIUM)
+# 🖥️ LÓGICA DE VISUALIZACIÓN (DENTRO DEL IF NOMBRE Y FECHA)
 # =====================================================
 
-def numero_compatibilidad(fecha1: date, fecha2: date) -> int:
-    total = (
-        fecha1.day + fecha1.month + fecha1.year +
-        fecha2.day + fecha2.month + fecha2.year
-    )
-    while total > 33:
-        total = sum(int(d) for d in str(total))
-    if total in (11, 22, 33):
-        return total
-    while total > 9:
-        total = sum(int(d) for d in str(total))
-    return total
+# =====================================================
+# 🧾 FORMULARIO (ENTRADAS)
+# =====================================================
+st.markdown("## ✍️ Ingresa tus datos")
 
+with st.form("form_lectura"):
+    nombre_completo = st.text_input("Nombre completo", value="", placeholder="Ej: Eugenia Místico")
+    fecha_nac = st.date_input("Fecha de nacimiento", value=date(2000, 1, 1), format="DD/MM/YYYY")
 
+    st.markdown("### Opcional (pareja)")
+    nombre_pareja = st.text_input("Nombre de tu pareja (opcional)", value="", placeholder="Ej: Carlos")
+    fecha_pareja = st.date_input("Fecha de nacimiento de tu pareja (opcional)", value=date(2000, 1, 1), format="DD/MM/YYYY")
 
+    st.markdown("### Opcional (entorno)")
+    direccion_apto = st.text_input("Dirección / Apto (opcional)", value="", placeholder="Ej: Torre A, Apto 12B")
+    telefono = st.text_input("Teléfono (opcional)", value="", placeholder="Ej: +58 412 123 4567")
 
+    generar = st.form_submit_button("🔮 Generar lectura")
 
+# Normalización de opcionales
+nombre_pareja = nombre_pareja.strip() or None
+direccion_apto = direccion_apto.strip() or None
+telefono = telefono.strip() or None
 
-
-
-
-
-
+# En Streamlit, date_input devuelve un datetime.date o None.
+# Si la usuaria no selecciona fecha, queda None.
+if not generar:
+    st.stop()
 
 # =====================================================
-# MOSTRAR ESENCIAL SOLO AL PRESIONAR BOTÓN
+# 🔢 CÁLCULOS PRINCIPALES (TIEMPOS Y NÚMEROS)
 # =====================================================
-if calcular:
-    incrementar_contador()
+# Hoy (para año/mes/día personal)
+anio_actual = hoy.year
+mes_actual = hoy.month
+dia_actual = hoy.day
+semana_actual = hoy.isocalendar().week
 
+# Personal (Año/Mes/Semana/Día) - SIEMPRE que haya fecha_nac
+ap_p = ano_personal(fecha_nac, anio_actual)
+mp_p = mes_personal(ap_p, mes_actual)
+sp_p = semana_personal(mp_p, semana_actual)
+dp_p = dia_personal(mp_p, dia_actual)
+
+# Vibración base (Esencia / Imagen / Vida pasada / Sendero)
+n_esencia = esencia(fecha_nac)
+n_imagen = imagen_externa(fecha_nac)
+n_pasada = vida_pasada(fecha_nac)
+n_sendero = sendero_vida(fecha_nac)
+
+# Entorno (hogar / teléfono)
+num_dir = numero_apto(direccion_apto) if direccion_apto else 0
+num_tel = numero_apto(telefono) if telefono else 0
+
+# Arcano semanal (1..22)
+arc_p = semana_actual % 22
+arc_p = 22 if arc_p == 0 else arc_p
+
+
+if nombre_completo and fecha_nac:
+    # Mostramos la clave única que generamos en la Parte 4
+    clave_lectura = generar_clave_unica(nombre_completo, fecha_nac)
+    st.success(f"Lectura generada con éxito. Clave: *{clave_lectura}*")
+
+    # --- 1. BLOQUE DE ESENCIA Y SENDERO (TEXTOS PROFUNDOS) ---
+    st.markdown("### 🏺 Tu Vibración Base")
+    em_card("Tu Esencia (Día)", "✨", obtener_texto_esencia(n_esencia))
+    em_card("Imagen Externa (Mes)", "🎭", obtener_texto_imagen(n_imagen))
+    em_card("Vida Pasada (Año)", "📜", obtener_texto_vida_pasada(n_pasada))
+    
     st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
-    st.markdown("## ✨ Lectura esencial")
+    
+    em_card(f"Sendero de Vida: {n_sendero}", "🛣️", 
+            obtener_texto_sendero(n_sendero), 
+            f"Frase Maestra: {obtener_frase_clave(n_sendero)}")
 
-    st.markdown(f"### 🔥 Año personal ({hoy.year}) — Número {ap}")
-    st.markdown(f'<div class="em-card">{lectura_resumida(ap)}</div>', unsafe_allow_html=True)
+    # --- 2. BLOQUE PREMIUM (USANDO EL DICCIONARIO TEXTOS_PREMIUM) ---
+    with st.expander("💎 Análisis Premium Detallado"):
+        st.markdown("#### Energía de este momento")
+        st.write(f"*Año Personal {ap_p}:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, 'Año personal'))
+        st.write(f"*Mes Personal {mp_p}:* " + parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, 'Mes personal'))
+        
+        st.markdown("#### Pilares de Vida")
+        st.info("*Amor y vínculos:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos"))
+        st.info("*Dinero y prosperidad:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad"))
+        st.info("*Protección energética:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
 
-    st.markdown(f"### 🌿 Esencia — Número {es}")
-    st.markdown(f'<div class="em-card">{lectura_resumida(es)}</div>', unsafe_allow_html=True)
+    # --- 3. COMPATIBILIDAD DE PAREJA (SI SE INGRESÓ) ---
+    if nombre_pareja and fecha_pareja:
+        n_p_sendero = sendero_vida(fecha_pareja)
+        n_comp_final = reducir_numero(n_sendero + n_p_sendero)
+        st.markdown(f"### 💞 Compatibilidad con {nombre_pareja}")
+        st.write(obtener_compatibilidad_profunda(n_comp_final))
 
-    st.markdown(f"### 🪞 Nombre — Número {num_nombre if num_nombre else '—'}")
-    if num_nombre:
-        st.markdown(f'<div class="em-card">{lectura_resumida(num_nombre)}</div>', unsafe_allow_html=True)
-    else:
-        st.info("Escribe tu nombre completo para ver la energía de tu nombre.")
+    # --- 4. ENTORNO Y ARCANOS ---
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if direccion_apto:
+            em_card(f"Hogar: {num_dir}", "🏠", texto_hogar(num_dir))
+    with col_b:
+        if telefono:
+            em_card(f"Teléfono: {num_tel}", "📱", texto_telefono(num_tel))
 
-    st.markdown(f"### 🧭 Misión — Número {mis}")
-    st.markdown(f'<div class="em-card">{lectura_resumida(mis)}</div>', unsafe_allow_html=True)
+    st.markdown("### 🃏 Arcano de la Semana")
+    st.info(arcano_micro(arc_p))
 
-    st.markdown(f"### 🌙 Energía de hoy — Número {dp}")
-    st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
+    # --- 5. BOTÓN DE DESCARGA PDF ---
+    # Aquí unimos todos los textos para el archivo final
+    secciones_pdf = [
+        ("Esencia", obtener_texto_esencia(n_esencia)),
+        ("Sendero de Vida", obtener_texto_sendero(n_sendero)),
+        ("Amor y Vínculos", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos")),
+        ("Dinero y Prosperidad", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad")),
+        ("Vibración del Hogar", texto_hogar(num_dir) if direccion_apto else "No ingresado"),
+        ("Mensaje del Arcano", arcano_micro(arc_p))
+    ]
+    
+    pdf_bytes = build_pdf_bytes(f"Lectura de {nombre_completo}", secciones_pdf)
+    st.download_button("📥 Descargar Lectura PDF", pdf_bytes, f"{nombre_completo}_Lectura.pdf", "application/pdf")
 
-    # =====================================================
-    # VIBRACIONES PREMIUM
-    # =====================================================
-    st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
-
-    # TELÉFONO
-    if telefono.strip():
-        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
-        st.markdown(
-            f"""
-            <div class="em-card">
-              <div class="em-muted">Vibración activa por tu número de contacto</div>
-              <div style="font-size:1.03rem; line-height:1.75;">
-                {texto_tel}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            '<div class="em-card em-muted">📞 Agrega un teléfono para activar esta lectura.</div>',
-            unsafe_allow_html=True
-        )
-
-    # HOGAR
-    if direccion_apto.strip():
-        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
-        st.markdown(
-            f"""
-            <div class="em-card">
-              <div class="em-muted">Vibración activa por tu espacio personal</div>
-              <div style="font-size:1.03rem; line-height:1.75;">
-                {texto_dir}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            '<div class="em-card em-muted">🏠 Agrega tu dirección o apto para activar esta lectura.</div>',
-            unsafe_allow_html=True
-        )
-
-    # =====================================================
-    # PINÁCULO Y ARCANO (SIEMPRE SE MUESTRAN)
+# =====================================================
+    # 🎨 RESULTADOS VISUALES (LA PARTE BONITA)
     # =====================================================
     
-    # -------------------------------------------------
-    # 💞 Compatibilidad de pareja (Express - GRATIS)
-    # -------------------------------------------------
-    if activar_compat_express and fecha_pareja_express:
-        comp_ex = compatibilidad_numero(fecha_nac, fecha_pareja_express)
-        st.markdown("### 💞 Compatibilidad de pareja (Express · Gratis)")
-        em_card(
-            f"Compatibilidad Express · Número {comp_ex}",
-            "💞",
-            compatibilidad_express_texto(comp_ex),
-            "Express = orientación rápida. Para el análisis largo, está en Premium."
-        )
-
-st.markdown("### 🏔️ Pináculo (pirámide completa)")
-    st.markdown(
-        f"""
-        <div class="em-card">
-          <div class="em-muted">Base: {pin['base']} · Medio: {pin['medio']} · Cima: {pin['cima']}</div>
-          <div style="margin-top:10px;">{pinaculo_micro(pin)}</div>
+    # 1. Hero / Cabecera de la lectura
+    st.markdown(f"""
+        <div class="em-hero">
+            <div class="em-hero-badge">🔮 {BRAND}</div>
+            <div class="em-hero-title">Tu Mapa Vibracional</div>
+            <div class="em-hero-sub">Clave única: {clave_lectura}</div>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-    st.markdown("### 🃏 Arcano mayor semanal")
-    st.markdown(f'<div class="em-card">{arcano_micro(arc)}</div>', unsafe_allow_html=True)
-
-    # =====================================================
-    # PDF
-    # =====================================================
-    st.download_button(
-        "⬇️ Descargar PDF (Tu Lectura Mystika)",
-        data=pdf_resumido,
-        file_name=f"Lectura_Numerologica_Esencial_{BRAND}.pdf",
-        mime="application/pdf",
-    )
-
-else:
-    st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
-
-# =====================================================
-# PANEL ADMIN (OCULTO POR PIN)
-# =====================================================
-if ADMIN_PIN:
-    with st.expander("🔐 Eugenia Mystikos (Admin)", expanded=False):
-        pin_ingresado = st.text_input("PIN de administración", type="password", key="pin_admin")
-        if pin_ingresado:
-            if pin_ingresado == ADMIN_PIN:
-                st.success("Acceso concedido ✅")
-                st.info(f"📊 Uso interno · Total activaciones esencial: {leer_contador()}")
-                if nombre.strip():
-                    st.caption("Clave del cliente (según nombre+fecha actuales):")
-                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
-            else:
-                st.error("PIN incorrecto")
-
-# =====================================================
-# VERSIÓN COMPLETA (PAGO) - NO TOCADO EN LÓGICA
-# =====================================================
-st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
-st.markdown("## 💎 Lectura profunda personalizada")
-st.markdown(
-    '<div class="em-card em-muted">Accede a tu lecturs profunda usando tu clave personal. Si tu nombre/fecha no coinciden exactamente con la compra, la clave no validará.</div>',
-    unsafe_allow_html=True
-)
-
-colv1, colv2 = st.columns(2)
-with colv1:
-    nombre_compra = st.text_input(
-        "Nombre (exactamente como en tu compra)",
-        key="nombre_compra",
-        max_chars=40,
-        placeholder="Ej: Eugenia Mistikos"
-    )
-with colv2:
-    fecha_compra = st.date_input(
-        "Fecha de nacimiento (como en tu compra)",
-        key="fecha_compra",
-        min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),
-        value=date(1990, 1, 1),
-    )
-
-clave_ingresada = st.text_input(
-    "Introduce tu clave personal",
-    type="password",
-    key="clave_ingresada"
-).strip().upper()
-
-if clave_ingresada:
-    if not nombre_compra.strip():
-        st.warning("Escribe tu nombre tal como aparece en tu compra.")
-        st.stop()
-
-    if not fecha_compra:
-        st.warning("Debes indicar la fecha de nacimiento usada en tu compra.")
-        st.stop()
-
-    clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
-
-    if clave_ingresada != clave_esperada:
-        st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
-        st.stop()
-
-    st.success("Versión completa desbloqueada ✅")
-
-    nombre_validado = nombre_compra.strip()
-    fecha_validada = fecha_compra
-
-    es_p = esencia(fecha_validada)
-    mis_p = sendero_vida(fecha_validada)
-    vp_p = vida_pasada(fecha_validada)
-
-    ap_p = ano_personal(fecha_validada, hoy.year)
-    mp_p = mes_personal(ap_p, hoy.month)
-    sp_p = semana_personal(mp_p, hoy.isocalendar()[1])
-    dp_p = dia_personal(mp_p, hoy.day)
-
-    arc_p = arcano_semanal()
-    pin_p = pinaculo_piramide(fecha_validada)
-
-    st.markdown("### 📌 Datos opcionales Premium")
-
-    cA, cB = st.columns(2)
-
-    with cA:
-        telefono = st.text_input(
-            "📞 Teléfono (opcional)",
-            value="",
-            placeholder="Ej: +58 412 000 0000",
-            key="telefono_premium"
-        )
-
-    with cB:
-        direccion_apto = st.text_input(
-            "🏠 Dirección / Apto (opcional)",
-            value="",
-            placeholder="Ej: Torre A, Apto 12B",
-            key="direccion_premium"
-        )
-
-    # ─────────────────────────────
-    # Cálculo solo si hay dato
-    # ─────────────────────────────
-    num_tel = numero_apto(telefono) if telefono.strip() else None
-    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else None
-
-    # ─────────────────────────────
-    # Resultados PREMIUM
-    # ─────────────────────────────
-    if num_tel is not None:
-        st.markdown("#### 📞 Vibración del teléfono")
-        st.write(f"*Número:* {num_tel}")
-        st.write(mensaje_vibracion_telefono(num_tel))
-
-    if num_dir is not None:
-        st.markdown("#### 🏠 Vibración de la dirección")
-        st.write(f"*Número:* {num_dir}")
-        st.write(mensaje_vibracion_direccion(num_dir))
+    # 2. Bloque de Vibraciones de Nacimiento (Iconos diseñados)
+    st.markdown("### 🏺 Tu Configuración de Origen")
     
-    # -------------------------------------------------
-    # 💞 Compatibilidad de pareja (Premium - LARGO)
-    # -------------------------------------------------
-    st.markdown("### 💞 Compatibilidad de pareja (Premium)")
     c1, c2 = st.columns(2)
     with c1:
-        nombre_pareja_p = st.text_input(
-            "Nombre completo de la otra persona (opcional)",
-            key="nombre_pareja_premium",
-            max_chars=40,
-            placeholder="Ej: Nombre Apellido"
-        )
+        em_card("Tu Esencia", "✨", obtener_texto_esencia(n_esencia), 
+                f"Vibración de tu día de nacimiento ({fecha_nac.day})")
+        
+        em_card("Imagen Externa", "🎭", obtener_texto_imagen(n_imagen), 
+                f"Vibración de tu mes de nacimiento ({fecha_nac.month})")
+
     with c2:
-        fecha_pareja_p = st.date_input(
-            "Fecha de nacimiento de la otra persona",
-            key="fecha_pareja_premium",
-            min_value=date(1940, 1, 1),
-            max_value=date(2040, 12, 31),
-            value=date(1990, 1, 1),
-        )
+        em_card("Talento Heredado", "📜", obtener_texto_vida_pasada(n_pasada), 
+                f"Vibración de tu año de nacimiento ({fecha_nac.year})")
+        
+        em_card("Misión de Vida", "🛣️", obtener_texto_sendero(n_sendero), 
+                f"Tu Sendero de Vida es el número {n_sendero}")
 
-    comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
-    st.write(f"Número {comp_p}")
-    st.write(parrafo_premium_categoria(comp_p, mp_p, sp_p, dp_p, "Compatibilidad de pareja"))
+    st.markdown('<div class="em-sep"></div>', unsafe_allow_html=True)
 
+    # 3. Bloque de Tiempos (Métricas Visuales)
+    st.markdown("### ⏳ Tu Clima Energético Actual")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Año Personal", ap_p)
+    m2.metric("Mes Personal", mp_p)
+    m3.metric("Día Personal", dp_p)
 
-    st.markdown("## 🌙 Secciones Premium")
+    with st.expander("📖 Leer interpretación de mis tiempos"):
+        st.write(f"*Este Año ({hoy_actual.year}):* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, 'Año personal'))
+        st.write(f"*Este Mes:* " + parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, 'Mes personal'))
+        st.write(f"*Esta Semana:* " + parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, 'Semana personal'))
 
-    st.markdown("### 🌿 1) Esencia")
-    st.write(f"Número {es_p}")
-    st.write(parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, "Esencia"))
+    # 4. Bloque Premium (Amor, Dinero y Protección con iconos)
+    st.markdown("### 💎 Análisis Premium")
+    
+    st.info("💞 *Amor y vínculos:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos"))
+    st.success("💰 *Dinero y prosperidad:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad"))
+    st.warning("🛡️ *Protección energética:* " + parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
 
-    st.markdown("### 🧭 2) Misión / Sendero de vida")
-    st.write(f"Número {mis_p}")
-    st.write(parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, "Misión"))
+    # 5. Compatibilidad (Si aplica)
+    if nombre_pareja:
+        st.markdown(f"### 💞 Compatibilidad con {nombre_pareja}")
+        em_card("Vínculo Profundo", "💘", obtener_compatibilidad_profunda(n_comp_final))
 
-    st.markdown("### 🕰️ 3) Vida pasada")
-    st.write(f"Número {vp_p}")
-    st.write(parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, "Vida pasada"))
+    # 6. Entorno y Arcanos
+    st.markdown("### 🏠 Tu Entorno y Guía")
+    col_e1, col_e2 = st.columns(2)
+    with col_e1:
+        if direccion_apto:
+            em_card(f"Hogar: {num_dir}", "🏠", texto_hogar(num_dir))
+    with col_e2:
+        if telefono:
+            em_card(f"Teléfono: {num_tel}", "📱", texto_telefono(num_tel))
 
-    st.markdown("### 🔥 4) Año personal")
-    st.write(f"Número {ap_p}")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Año personal"))
-
-    st.markdown("### 🗓️ 5) Mes personal")
-    st.write(f"Número {mp_p}")
-    st.write(parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, "Mes personal"))
-
-    st.markdown("### 🧩 6) Semana personal")
-    st.write(f"Número {sp_p}")
-    st.write(parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, "Semana personal"))
-
-    st.markdown("### 🌙 7) Día personal")
-    st.write(f"Número {dp_p}")
-    st.write(parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, "Día personal"))
-
-    st.markdown("## ✨ Premium: Amor, Dinero, Emoción y Protección")
-    st.markdown("### 💗 Amor y vínculos")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos"))
-
-    st.markdown("### 💰 Dinero y prosperidad")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad"))
-
-    st.markdown("### 🌊 Energía emocional")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional"))
-
-    st.markdown("### 🛡️ Protección energética")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
-
-    st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
-    if telefono.strip():
-        st.markdown(f"### 📞 Teléfono — Número {num_tel}")
-        st.write(texto_telefono(num_tel))
-    else:
-        st.info("Si deseas, agrega un teléfono para activar esta sección.")
-
-    if direccion_apto.strip():
-        st.markdown(f"### 🏠 Dirección / Apto — Número {num_dir}")
-        st.write(texto_hogar(num_dir))
-    else:
-        st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
-
-    st.markdown("### 🃏 8) Arcano mayor de la semana")
-    st.write(arcano_micro(arc_p))
-
-    st.markdown("### 🏔️ 9) Pináculo (pirámide completa)")
-    st.write(f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}")
-    st.write(pinaculo_micro(pin_p))
-
-    secciones_completa = [
-        ("Datos", f"Nombre: {nombre_validado or '—'}\nFecha de nacimiento: {fecha_validada}\nGenerado: {hoy}"),
-        ("Esencia", f"Número {es_p}\n\n{parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, 'Esencia')}"),
-        ("Misión / Sendero", f"Número {mis_p}\n\n{parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, 'Misión')}"),
-        ("Vida pasada", f"Número {vp_p}\n\n{parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, 'Vida pasada')}"),
-        ("Año personal", f"Número {ap_p}\n\n{parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, 'Año personal')}"),
-        ("Mes personal", f"Número {mp_p}\n\n{parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, 'Mes personal')}"),
-        ("Semana personal", f"Número {sp_p}\n\n{parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, 'Semana personal')}"),
-        ("Día personal", f"Número {dp_p}\n\n{parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, 'Día personal')}"),
-        ("Premium: Amor y vínculos", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos")),
-        ("Premium: Dinero y prosperidad", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad")),
-        ("Premium: Energía emocional", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional")),
-        ("Premium: Protección energética", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética")),
-        ("Teléfono", f"Número {num_tel if num_tel else '—'}\n\n{texto_telefono(num_tel) if num_tel else 'No se ingresó teléfono.'}"),
-        ("Dirección / Apto", f"Número {num_dir if num_dir else '—'}\n\n{texto_hogar(num_dir) if num_dir else 'No se ingresó dirección/apto.'}"),
-        ("Arcano mayor semanal", arcano_micro(arc_p)),
-        ("Pináculo (pirámide completa)", f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}\n\n{pinaculo_micro(pin_p)}"),
-    ]
-
-    pdf_completa = build_pdf_bytes(
-        f"{APP_TITLE} · Lectura completa · {BRAND}",
-        secciones_completa
-    )
-
-    st.download_button(
-        "⬇️ Descargar PDF (Lectura completa)",
-        data=pdf_completa,
-        file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
-        mime="application/pdf",
-    )
-
-st.caption(f"{BRAND} · Lectura Numerológica")
-
+    st.markdown('<div class="em-card" style="border-left: 5px solid #7B4AE2;">'
+                f'<strong>🃏 Arcano de la Semana:</strong><br>{arcano_micro(arc_p)}'
+                '</div>', unsafe_allow_html=True)
