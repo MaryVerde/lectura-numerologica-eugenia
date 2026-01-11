@@ -12,10 +12,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
-from hashlib import sha256
 
-import unicodedata
-import re
+
 
 def normalizar_texto(texto):
     """
@@ -33,7 +31,7 @@ def normalizar_texto(texto):
 
 
 
-# =====================================================
+## =====================================================
 # CONFIGURACIÓN GENERAL (PRIMERO EN STREAMLIT)
 # =====================================================
 APP_TITLE = "🔮 Lectura Numerológica"
@@ -45,171 +43,219 @@ st.set_page_config(
     layout="centered",
 )
 
-
 st.markdown("""
 <style>
-/* Fondo general */
+/* =====================================================
+   FONDO GENERAL
+   ===================================================== */
 html, body, [data-testid="stApp"] {
     background-color: #FBF9FD;
 }
 
-/* Títulos principales */
+/* =====================================================
+   TIPOGRAFÍA
+   ===================================================== */
 h1, h2, h3 {
     color: #3E2A5E;
     letter-spacing: 0.4px;
 }
 
-/* Subtítulos */
 h4, h5 {
     color: #5A3E85;
 }
 
-/* Texto normal */
 p, li, span {
     color: #3B2F4A;
     font-size: 1.02rem;
     line-height: 1.65;
 }
 
-/* Tarjetas suaves */
-.card {
+/* =====================================================
+   BOTÓN PRINCIPAL (STREAMLIT ACTUAL)
+   ===================================================== */
+button[data-testid="baseButton-primary"] {
+    background: linear-gradient(135deg, #7B4AE2, #A88CF0) !important;
+    border-radius: 18px !important;
+    border: none !important;
+    padding: 0.6rem 1.4rem !important;
+    font-weight: 600 !important;
+    color: white !important;
+}
+
+/* =====================================================
+   SISTEMA UI EUGENIA.MÍSTICO
+   ===================================================== */
+
+/* Sección / encabezado de bloque */
+.em-hero{
     background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
-    padding: 22px;
+    border: 1px solid #E3D6ED;
+    border-radius: 22px;
+    padding: 18px 18px;
+    margin: 10px 0 18px 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.em-hero-badge{
+    display:inline-block;
+    font-size:0.78rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:#5A3E85;
+    margin-bottom:8px;
+}
+
+.em-hero-title{
+    font-size:1.65rem;
+    font-weight:800;
+    color:#3E2A5E;
+    line-height:1.2;
+}
+
+.em-hero-sub{
+    margin-top:8px;
+    font-size:1.02rem;
+    color:#3B2F4A;
+    line-height:1.6;
+}
+
+/* Tarjetas */
+.em-card{
+    background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
+    padding: 20px 22px;
     border-radius: 22px;
     border: 1px solid #E3D6ED;
     box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
-/* Separadores */
-.divider {
+.em-muted{
+    color: #6B5A7A;
+    font-size: 0.92rem;
+    margin-top: 10px;
+}
+
+/* Separador suave */
+.em-sep{
     height: 1px;
     background: linear-gradient(to right, transparent, #C9B6E4, transparent);
-    margin: 30px 0;
-}
-
-/* Botón principal */
-button[kind="primary"] {
-    background: linear-gradient(135deg, #7B4AE2, #A88CF0);
-    border-radius: 18px;
-    border: none;
-    padding: 0.6rem 1.4rem;
-    font-weight: 600;
-}
-
-/* Eugenia.Mystikos UI system */
-.em-hero{
-  background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
-  border: 1px solid #E3D6ED;
-  border-radius: 22px;
-  padding: 18px 18px;
-  margin: 10px 0 18px 0;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-}
-.em-hero-badge{
-  display:inline-block;
-  font-size:0.78rem;
-  letter-spacing:0.12em;
-  text-transform:uppercase;
-  color:#5A3E85;
-  margin-bottom:8px;
-}
-.em-hero-title{
-  font-size:1.65rem;
-  font-weight:800;
-  color:#3E2A5E;
-  line-height:1.2;
-}
-.em-hero-sub{
-  margin-top:8px;
-  font-size:1.02rem;
-  color:#3B2F4A;
-  line-height:1.6;
-}
-
-.em-card{
-  background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
-  padding: 20px 22px;
-  border-radius: 22px;
-  border: 1px solid #E3D6ED;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  margin-bottom: 16px;
-}
-.em-muted{
-  color: #6B5A7A;
-  font-size: 0.92rem;
-  margin-top: 10px;
-}
-.em-sep{
-  height: 1px;
-  background: linear-gradient(to right, transparent, #C9B6E4, transparent);
-  margin: 26px 0;
+    margin: 26px 0;
 }
 </style>
 """, unsafe_allow_html=True)
 
-
 # =====================================================
 # COMPONENTES UI
 # =====================================================
+
 def em_card(titulo: str, icono: str, contenido: str, nota: str = ""):
+    """
+    Tarjeta visual estándar para Express y Premium.
+    Usa únicamente clases que EXISTEN en el CSS (Paso 3).
+    """
     st.markdown(
         f"""
 <div class="em-card">
-  <div class="em-head">
-    <div class="em-icon">{icono}</div>
+  <div style="display:flex; gap:12px; align-items:flex-start;">
+    <div style="font-size:1.4rem; line-height:1;">{icono}</div>
     <div>
-      <div class="em-title">{titulo}</div>
+      <div style="font-weight:700; font-size:1.05rem; color:#3E2A5E;">
+        {titulo}
+      </div>
       {f'<div class="em-muted">{nota}</div>' if nota else ''}
     </div>
   </div>
-  <div class="em-body">{contenido}</div>
+  <div style="margin-top:10px;">
+    {contenido}
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
 
+# =====================================================
+# NORMALIZACIÓN PARA CLAVES (USO: PAGO / TOKENS)
+# =====================================================
 def normalizar_clave_nombre(txt: str) -> str:
+    """
+    Normaliza nombre para generación de claves:
+    - Quita acentos
+    - Mantiene espacios
+    - Convierte a MAYÚSCULAS
+    """
     txt = unicodedata.normalize("NFD", str(txt))
     txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
     txt = re.sub(r"[^A-Za-z\s]", " ", txt)
     txt = re.sub(r"\s+", " ", txt).strip().upper()
     return txt
 
+
 def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
-    """Crea una clave EM-XXXX-XXXX-XXXX-XXXX única para cada persona."""
+    """
+    Crea una clave única EM-XXXX-XXXX-XXXX-XXXX
+    segura e incuantificable (hash + APP_SECRET).
+    """
     nombre_normalizado = normalizar_clave_nombre(nombre_completo)
-    # Usamos APP_SECRET para que la clave sea segura e incuificable
     payload = f"{nombre_normalizado}|{fecha_nac.isoformat()}".encode("utf-8")
-    digest = hmac.new(APP_SECRET.encode("utf-8"), payload, hashlib.sha256).hexdigest().upper()
+    digest = hmac.new(
+        APP_SECRET.encode("utf-8"),
+        payload,
+        hashlib.sha256
+    ).hexdigest().upper()
     core = digest[:16]
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
+
+# =====================================================
+# UTILIDADES NUMÉRICAS AUXILIARES (USADAS EN VARIOS BLOQUES)
+# =====================================================
 def sumar_digitos_texto(txt: str) -> int:
     digs = re.findall(r"\d", str(txt))
-    if not digs: return 0
+    if not digs:
+        return 0
     return reducir_numero(sum(int(d) for d in digs))
 
+
 def numero_nombre(nombre: str) -> int:
-    total = sum(TABLA_PITAGORICA.get(char, 0) for char in normalizar_texto(nombre) if char.isalpha())
+    total = sum(
+        TABLA_PITAGORICA.get(char, 0)
+        for char in normalizar_texto(nombre)
+        if char.isalpha()
+    )
     return reducir_numero(total)
+
 
 def numero_apto(apto: str) -> int:
     apto = str(apto).strip()
-    if not apto: return 0
-    if re.search(r"\d", apto): return sumar_digitos_texto(apto)
+    if not apto:
+        return 0
+    if re.search(r"\d", apto):
+        return sumar_digitos_texto(apto)
     return numero_nombre(apto)
-
-# Funciones de Tiempo y Vibración
 
 
 # =====================================================
 # UTILIDADES NUMEROLÓGICAS (UNA SOLA VEZ)
 # =====================================================
+
+TABLA_PITAGORICA = {
+    "A": 1, "J": 1, "S": 1,
+    "B": 2, "K": 2, "T": 2,
+    "C": 3, "L": 3, "U": 3,
+    "D": 4, "M": 4, "V": 4,
+    "E": 5, "N": 5, "W": 5,
+    "F": 6, "O": 6, "X": 6,
+    "G": 7, "P": 7, "Y": 7,
+    "H": 8, "Q": 8, "Z": 8,
+    "I": 9, "R": 9
+}
+
+
+
 def reducir_numero(n: int) -> int:
-    """Reduce a 1–9, preservando 11 y 22."""
-    while n > 9 and n not in (11, 22):
+    """Reduce a 1–9, preservando 11, 22 y 33."""
+    while n > 9 and n not in (11, 22, 33):
         n = sum(int(d) for d in str(n))
     return n
 
@@ -229,10 +275,10 @@ def esencia(nombre: str) -> int:
     return reducir_numero(numero_nombre(nombre))
 
 def imagen_externa(nombre: str) -> int:
-    # Imagen = consonantes (sin vocales)
-    nombre = normalizar_clave_nombre(nombre)
+    nombre = normalizar_texto(nombre)
     consonantes = re.sub(r"[AEIOU]", "", nombre)
-    return reducir_numero(sumar_digitos_texto(consonantes))
+    total = sum(TABLA_PITAGORICA.get(c, 0) for c in consonantes)
+    return reducir_numero(total)
 
 def vida_pasada(fecha_nac: date) -> int:
     return reducir_numero(fecha_nac.day)
@@ -250,8 +296,7 @@ def dia_del_ano(hoy: date) -> int:
 
 
 # =====================================================
-# 🌅 ENERGÍA DEL DÍA (365 mensajes) — SOLO PREMIUM
-# Pega aquí tus 365 mensajes (1..365). Dejo ejemplos.
+# # 🌅 ENERGÍA DEL DÍA (365 mensajes) — REGALO (EXPRESS)
 # =====================================================
 ENERGIA_DIA_365 = {
     1: "Hoy no apresures nada. La energía se ordena cuando eliges presencia en lugar de urgencia.",
@@ -1298,53 +1343,122 @@ NUM_RASGOS = {
 # =====================================================
 # TEXTOS (UNA SOLA VEZ)
 # =====================================================
-def get_dict_text(dic: dict, n: int, default: str = "Texto no disponible."):
-    return dic.get(int(n), default)
+# =====================================================
+# TEXTOS / RESOLVERS (UNA SOLA VEZ)
+# =====================================================
+
+def get_dict_text(dic: dict, n, default: str = "Texto no disponible."):
+    try:
+        return dic.get(int(n), default)
+    except (TypeError, ValueError):
+        return default
+
 
 def texto_esencia(n: int) -> str:
     return get_dict_text(TEXTO_ESENCIA, n)
 
+
 def texto_imagen(n: int) -> str:
     return get_dict_text(TEXTO_IMAGEN, n)
+
 
 def texto_vida_pasada(n: int) -> str:
     return get_dict_text(TEXTO_VIDA_PASADA, n)
 
+
 def texto_sendero(n: int) -> str:
     return get_dict_text(TEXTO_SENDERO_VIDA, n)
+
 
 def texto_arcano(n: int) -> str:
     return get_dict_text(ARCANOS_RESUMIDOS, n, "Arcano: integración y conciencia.")
 
+
 def texto_hogar(num_dir: int) -> str:
     return get_dict_text(TEXTO_HOGAR, num_dir, "Hogar: equilibrio, limpieza y armonía.")
+
 
 def texto_telefono(num_tel: int) -> str:
     return get_dict_text(TEXTO_TELEFONO, num_tel, "Teléfono: comunicación consciente y límites sanos.")
 
+
 def compatibilidad_express_texto(n: int) -> str:
     return get_dict_text(COMPATIBILIDAD_EXPRES, n, "Compatibilidad express no disponible.")
+
 
 def compatibilidad_profunda_texto(n: int) -> str:
     return get_dict_text(COMPATIBILIDAD_PROFUNDA, n, "Compatibilidad profunda no disponible.")
 
+
 def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
-    return reducir_numero((fecha_a.day + fecha_a.month + fecha_a.year) + (fecha_b.day + fecha_b.month + fecha_b.year))
+    return reducir_numero(
+        (fecha_a.day + fecha_a.month + fecha_a.year) +
+        (fecha_b.day + fecha_b.month + fecha_b.year)
+    )
+
 
 def parrafo_premium_categoria(categoria: str, n: int) -> str:
-    # Usa NUM_RASGOS para rasgos por número y frases por categoría
+    """
+    Devuelve texto Premium por categoría (amor, dinero, emocional, proteccion)
+    combinando frase + rasgos.
+    """
+    cat = str(categoria).strip().lower()
+
     rasgos = NUM_RASGOS.get(int(n), [])
-    if categoria == "amor":
+    rtxt = " · ".join(rasgos) if isinstance(rasgos, (list, tuple)) else str(rasgos)
+
+    if cat == "amor":
         frase = FRASES_AMOR.get(int(n), "")
-    elif categoria == "dinero":
+    elif cat == "dinero":
         frase = FRASES_DINERO.get(int(n), "")
-    elif categoria == "emocional":
+    elif cat == "emocional":
         frase = FRASES_EMOCIONAL.get(int(n), "")
     else:
         frase = FRASES_PROTECCION.get(int(n), "")
-    rtxt = " · ".join(rasgos) if isinstance(rasgos, list) else str(rasgos)
+
     return f"{frase}\n\nRasgos: {rtxt}".strip()
 
+
+
+    # =====================================================
+# 4. FORMULARIO ÚNICO — SOLO EXPRESS
+# =====================================================
+with st.form("lectura_express"):
+
+    st.markdown("## ✍️ Ingresa tus datos")
+
+    nombre_completo = st.text_input(
+        "Nombre completo *"
+    )
+
+    fecha_nac = st.date_input(
+        "Fecha de nacimiento *",
+        min_value=date(1936, 1, 1),
+        max_value=date(2036, 12, 31)
+    )
+
+    st.markdown("### 💞 Compatibilidad (opcional)")
+    activar_compat_express = st.checkbox(
+        "Activar compatibilidad express (Gratis)",
+        value=False
+    )
+
+    fecha_pareja_express = st.date_input(
+        "Fecha de nacimiento de la pareja",
+        value=date(2000, 1, 1)
+    )
+
+    enviar = st.form_submit_button("✨ Generar lectura express")
+
+    
+ #==================================================   
+# VALIDACIÓN
+# =====================================================
+if not nombre_completo or not fecha_nac:
+    st.error("⚠️ La lectura requiere obligatoriamente el nombre completo y la fecha de nacimiento.")
+    st.stop()
+
+hoy = date.today()
 
 
 # =====================================================
@@ -1363,7 +1477,10 @@ def parrafo_premium_categoria(categoria: str, n: int) -> str:
 
 
 # =====================================================
-# PDF (UNA SOLA VEZ) — compatible y estable
+## =====================================================
+# EXPORTADORES / SALIDAS — PDF (SOLO PREMIUM)
+# Código latente: se activa con validación premium
+# =====================================================
 # =====================================================
 def build_pdf_bytes(
     nombre_completo: str,
@@ -1423,46 +1540,6 @@ def build_pdf_bytes(
 
 
 # =====================================================
-# 4. FORMULARIO ÚNICO — SOLO EXPRESS
-# =====================================================
-with st.form("lectura_express"):
-
-    st.markdown("## ✍️ Ingresa tus datos")
-
-    nombre_completo = st.text_input(
-        "Nombre completo *"
-    )
-
-    fecha_nac = st.date_input(
-        "Fecha de nacimiento *",
-        min_value=date(1936, 1, 1),
-        max_value=date(2036, 12, 31)
-    )
-
-    st.markdown("### 💞 Compatibilidad (opcional)")
-    activar_compat_express = st.checkbox(
-        "Activar compatibilidad express (Gratis)",
-        value=False
-    )
-
-    fecha_pareja_express = st.date_input(
-        "Fecha de nacimiento de la pareja",
-        value=date(2000, 1, 1)
-    )
-
-    enviar = st.form_submit_button("✨ Generar lectura express")
-
-    
- #==================================================   
-# VALIDACIÓN
-# =====================================================
-if not nombre_completo or not fecha_nac:
-    st.error("⚠️ La lectura requiere obligatoriamente el nombre completo y la fecha de nacimiento.")
-    st.stop()
-
-hoy = date.today()
-
-# =====================================================
 # CÁLCULOS
 # =====================================================
 n_sendero = sendero_vida(fecha_nac)
@@ -1476,10 +1553,12 @@ dp = dia_personal(fecha_nac, hoy)
 
 arc_p = arcano_personal(fecha_nac)
 
-num_dir = numero_apto(direccion_apto) if direccion_apto else None
-num_tel = numero_apto(telefono) if telefono else None
+# Premium (se activará luego)
+# num_dir = numero_apto(direccion_apto) if direccion_apto else None
+# num_tel = numero_apto(telefono) if telefono else None
 
-# =====================================================
+
+ #=====================================================
 # 🟢 LECTURA GRATUITA (GENEROSA)
 # =====================================================
 st.markdown("## 🟢 Lectura Gratuita")
@@ -1528,78 +1607,89 @@ if activar_compat_express:
     )
 
 # =====================================================
-# 🔐 CORTE PREMIUM (DESPUÉS DE LO GRATIS)
+# 🔐 CORTE PREMIUM (VERSIÓN FINANCE · CON CLAVE)
 # =====================================================
 st.markdown("---")
 st.markdown("## 🔐 Lectura Premium")
-st.info("Premium incluye: Energía del Día (365), Arcanos, compatibilidad profunda, hogar/teléfono energéticos y resumen extendido.")
+st.info(
+    "Premium incluye: Energía del Día (365), Arcanos, compatibilidad profunda, "
+    "hogar y teléfono energéticos, frases avanzadas y resumen extendido."
+)
 
+# Estado premium en sesión
 es_premium = st.session_state.get("es_premium", False)
 
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("✨ Activar Premium (demo)"):
+# ---- Entrada de CLAVE ----
+st.markdown("### 🔑 Ingresa tu clave Premium")
+clave_ingresada = st.text_input(
+    "Clave Premium",
+    type="password",
+    placeholder="Ej: EM-AB12-CD34-EF56-GH78"
+)
+
+# ---- Validación de clave ----
+# (usa la clave única que ya definiste por persona)
+if clave_ingresada:
+    clave_valida = generar_clave_unica(nombre_completo, fecha_nac)
+
+    if clave_ingresada.strip().upper() == clave_valida:
         st.session_state["es_premium"] = True
         es_premium = True
+        st.success("✅ Clave válida. Acceso Premium activado.")
+    else:
+        st.error("❌ Clave incorrecta. Verifica e intenta nuevamente.")
 
-with col2:
-    st.markdown("### 🔒 Premium completo")
-    st.write(
-        "Incluye: Energía del Día (365), Arcanos, compatibilidad profunda, "
-        "energía del hogar y del teléfono, y lectura extendida con resumen."
-    )
-    st.caption("💎 El pago real se habilita más adelante (sin Stripe por ahora).")
 # =====================================================
-# 💎 LECTURA PREMIUM (SOLO SI PAGA)
+# 💎 LECTURA PREMIUM (SOLO SI CLAVE ES VÁLIDA)
 # =====================================================
 if es_premium:
-    st.success("Acceso Premium activado")
 
-    # 🌅 Energía del día (365) — SOLO PREMIUM
+    # 🌅 Energía del día (365)
     em_card("Energía del Día", "🌅", energia_del_dia(hoy))
 
-    # 🃏 Arcanos — SOLO PREMIUM
+    # 🃏 Arcano personal
     em_card(f"Tu Arcano · {arc_p}", "🃏", texto_arcano(arc_p))
 
-    # 💞 Compatibilidad profunda — SOLO PREMIUM (si activó compatibilidad)
+    # 💞 Compatibilidad profunda (solo si activó compatibilidad)
     if activar_compat_express:
         comp_pr = compatibilidad_numero(fecha_nac, fecha_pareja_express)
         em_card(
             f"Compatibilidad Profunda · Número {comp_pr}",
             "💞",
             compatibilidad_profunda_texto(comp_pr),
-            "Profunda = más capas y más guía"
+            "Lectura profunda y orientadora"
         )
 
-    # 🏠📞 Hogar y teléfono — SOLO PREMIUM
+    # 🏠 Energía del hogar
     if num_dir is not None:
         em_card("Energía del Hogar", "🏠", texto_hogar(num_dir))
 
+    # 📞 Energía del teléfono
     if num_tel is not None:
         em_card("Energía del Teléfono", "📞", texto_telefono(num_tel))
 
-    # Resumen premium (15 líneas aprox.)
-    st.markdown("### 🔮 Resumen Final")
+    # 🔮 Resumen premium
+    st.markdown("### 🔮 Resumen Final Premium")
     resumen = [
-        f"1) Tu Sendero {n_sendero} marca tu dirección.",
+        f"1) Tu Sendero {n_sendero} marca tu dirección vital.",
         f"2) Tu Esencia {n_esencia} es tu motor interno.",
-        f"3) Tu Imagen {n_imagen} es tu proyección.",
-        f"4) Tu Vida Pasada {n_pasada} te deja aprendizajes.",
-        f"5) Hoy el ciclo vibra: Año {ap}, Mes {mp}, Día {dp}.",
-        "6) Lo esencial te sostiene más que la prisa.",
-        "7) Prioriza lo que te da paz real.",
+        f"3) Tu Imagen {n_imagen} define tu proyección.",
+        f"4) Tu Vida Pasada {n_pasada} deja aprendizajes activos.",
+        f"5) Hoy vibras en Año {ap}, Mes {mp}, Día {dp}.",
+        "6) La coherencia es tu protección.",
+        "7) Menos ruido, más verdad.",
         "8) Tu intuición se aclara cuando descansas.",
-        "9) Pon límites donde antes te excedías.",
-        "10) Habla claro: menos explicación, más verdad.",
-        "11) Orden afuera para silencio adentro.",
-        "12) Cuida tu energía como un ritual cotidiano.",
-        "13) Elige coherencia: eso es protección.",
-        "14) Agradece lo aprendido y suelta lo que pesa.",
-        "15) Hoy, un acto de amor por ti es suficiente."
+        "9) Pon límites con amor.",
+        "10) Orden externo, paz interna.",
+        "11) Cuida tu energía como ritual.",
+        "12) Elige lo esencial.",
+        "13) La claridad no grita.",
+        "14) Agradece y suelta.",
+        "15) Hoy, elegirte es suficiente."
     ]
     st.write("\n".join(resumen))
 
-    # PDF (opcional)
+    # 📄 PDF Premium
     st.markdown("---")
     st.markdown("### 📄 Descargar PDF (Premium)")
     pdf_bytes = build_pdf_bytes(
@@ -1621,5 +1711,9 @@ if es_premium:
         file_name=f"Eugenia_Mistico_Lectura_{normalizar_clave_nombre(nombre_completo)}.pdf",
         mime="application/pdf",
     )
+
 else:
-    st.caption("🔒 Premium desbloquea Energía del Día (365), Arcanos, hogar/teléfono y resumen extendido.")
+    st.caption(
+        "🔒 El acceso Premium requiere una clave válida. "
+        "Si ya realizaste el pago, ingresa tu clave para desbloquear todo el contenido."
+    )
