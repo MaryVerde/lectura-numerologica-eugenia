@@ -13,7 +13,14 @@ import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+# =====================================================
+# SECRET (OBLIGATORIO PARA CLAVES)
+# =====================================================
+APP_SECRET = st.secrets.get("APP_SECRET", "") or os.getenv("APP_SECRET", "")
 
+if not APP_SECRET:
+    st.error("Falta configurar APP_SECRET (secrets o variable de entorno). Sin esto no se pueden generar/validar claves Premium.")
+    st.stop()
 
 def normalizar_texto(texto):
     """
@@ -3426,5 +3433,6 @@ else:
         "🔒 El acceso Premium requiere una clave válida. "
         "Si ya realizaste el pago, ingresa tu clave para desbloquear todo el contenido."
     )
+
 
 
