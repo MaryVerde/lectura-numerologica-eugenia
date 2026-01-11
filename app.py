@@ -1,12 +1,13 @@
 
+import os
 import unicodedata
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from io import BytesIO
 import textwrap
 import hmac
 import hashlib
-import os
+
 import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
@@ -77,6 +78,57 @@ button[kind="primary"] {
     padding: 0.6rem 1.4rem;
     font-weight: 600;
 }
+
+/* Eugenia.Mystikos UI system */
+.em-hero{
+  background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
+  border: 1px solid #E3D6ED;
+  border-radius: 22px;
+  padding: 18px 18px;
+  margin: 10px 0 18px 0;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+.em-hero-badge{
+  display:inline-block;
+  font-size:0.78rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#5A3E85;
+  margin-bottom:8px;
+}
+.em-hero-title{
+  font-size:1.65rem;
+  font-weight:800;
+  color:#3E2A5E;
+  line-height:1.2;
+}
+.em-hero-sub{
+  margin-top:8px;
+  font-size:1.02rem;
+  color:#3B2F4A;
+  line-height:1.6;
+}
+.em-card{
+  background: linear-gradient(135deg, #F6EEF8, #EFE6F5);
+  padding: 20px 20px;
+  border-radius: 22px;
+  border: 1px solid #E3D6ED;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+.em-muted{ color:#6b5a7a; font-size:0.92rem; }
+.em-sep{
+  height:1px;
+  background: linear-gradient(to right, transparent, #C9B6E4, transparent);
+  margin: 26px 0;
+}
+.em-kicker{
+  font-size:0.78rem;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:#6b5a7a;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -513,17 +565,6 @@ def get_secret(key: str, default=None):
 APP_SECRET = get_secret("APP_SECRET")
 ADMIN_PIN = get_secret("ADMIN_PIN")
 
-# =============================
-# ZONA HORARIA (para evitar desfase de día en Streamlit Cloud / servidores UTC)
-# Puedes fijar TZ_OFFSET_HOURS en secrets (ej: -4 para Venezuela).
-# =============================
-TZ_OFFSET_HOURS = int(get_secret("TZ_OFFSET_HOURS", "-4"))
-
-def now_local() -> datetime:
-    """Fecha/hora local aproximada usando un offset fijo (evita que el 'día' salga corrido)."""
-    return datetime.utcnow() + timedelta(hours=TZ_OFFSET_HOURS)
-
-
 if not APP_SECRET:
     st.error("❌ Falta APP_SECRET. Ve a Settings → Secrets y agrega APP_SECRET.")
     st.stop()
@@ -557,7 +598,7 @@ from datetime import date
 
 import streamlit.components.v1 as components
 
-hoy = now_local().date()
+hoy = date.today()
 dia_del_ano = hoy.timetuple().tm_yday
 
 html = f"""
@@ -567,7 +608,7 @@ html = f"""
       Energía mística del día · {hoy.strftime('%d/%m/%Y')}
     </div>
     <div style="font-size:1.05rem; line-height:1.7; margin-top:10px;">
-      ☀️ <strong>{MENSAJES_MYSTIKOS.get(dia_del_ano, "Hoy vuelve a tu centro.")}</strong>
+      ☀️ <strong>{mensaje_Mystikos_del_dia()}</strong>
     </div>
     <div style="margin-top:10px; font-size:0.85rem; color:#6b5a7a;">
       Pulso energético correspondiente al día {dia_del_ano} del ciclo anual.
@@ -674,7 +715,7 @@ def dia_personal(mes_p: int, dia_hoy: int) -> int:
     return reducir_numero(mes_p + dia_hoy)
 
 def arcano_semanal() -> int:
-    semana = now_local().date().isocalendar()[1]
+    semana = date.today().isocalendar()[1]
     return (semana % 22) + 1
 
 def pinaculo_piramide(fecha: date) -> dict:
@@ -692,6 +733,36 @@ def pinaculo_piramide(fecha: date) -> dict:
     p6 = reducir_numero(p4 + p5)
 
     return {"base": (p1, p2, p3), "medio": (p4, p5), "cima": p6}
+
+
+# =====================================================
+# COMPATIBILIDAD DE PAREJA (EXPRESS / PREMIUM)
+# =====================================================
+COMPAT_EXPRESS = {
+    1: "Compatibilidad 1: chispa de inicio. Funciona si hay acuerdos claros y espacio personal.",
+    2: "Compatibilidad 2: sensibilidad y cooperación. Se sostiene con comunicación suave y paciencia.",
+    3: "Compatibilidad 3: alegría y expresión. Cuiden el respeto para que la energía no se disperse.",
+    4: "Compatibilidad 4: estabilidad y construcción. Requiere constancia, límites y proyecto real.",
+    5: "Compatibilidad 5: libertad y cambio. Pide flexibilidad; eviten controlar al otro.",
+    6: "Compatibilidad 6: hogar y cuidado. Se fortalece con compromiso emocional y equilibrio.",
+    7: "Compatibilidad 7: profundidad y espacio. Necesitan silencio, confianza y tiempos propios.",
+    8: "Compatibilidad 8: poder y logro. Funciona con ética, acuerdos y sin competencia.",
+    9: "Compatibilidad 9: cierre y madurez. Sana si sueltan expectativas y practican perdón.",
+    11: "Compatibilidad 11: vínculo espejo. Alta sensibilidad: cuiden límites energéticos.",
+    22: "Compatibilidad 22: construcción grande. Si hay visión compartida, deja legado.",
+    33: "Compatibilidad 33: amor consciente. Acompañar sin rescatar es la clave.",
+}
+
+def compatibilidad_numero(fecha1: date, fecha2: date) -> int:
+    total = (
+        fecha1.day + fecha1.month + fecha1.year +
+        fecha2.day + fecha2.month + fecha2.year
+    )
+    return reducir_numero(total)
+
+def compatibilidad_express_texto(num: int) -> str:
+    return COMPAT_EXPRESS.get(num, "Compatibilidad: lectura no disponible para este número.")
+
 
 # =====================================================
 # TEXTOS RESUMIDOS (base)
@@ -1428,9 +1499,25 @@ def texto_compatibilidad_profunda(numero: int) -> str:
         "Compatibilidad profunda no disponible para este número."
     )
 # =====================================================
+# CÁLCULO · VIBRACIÓN TELÉFONO Y HOGAR (PREMIUM)
 # =====================================================
-# (Premium) Teléfono/Hogar: se calculan dentro del bloque Premium (desbloqueado)
-# =====================================================
+
+# Teléfono
+num_tel = numero_apto(telefono) if telefono.strip() else 0
+texto_tel = (
+    TEXTO_TELEFONO.get(num_tel)
+    if num_tel in TEXTO_TELEFONO
+    else "La vibración del teléfono no pudo calcularse correctamente."
+)
+
+# Hogar / Dirección
+num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
+texto_dir = (
+    TEXTO_HOGAR.get(num_dir)
+    if num_dir in TEXTO_HOGAR
+    else "La vibración del hogar no pudo calcularse correctamente."
+)
+
 
 # =====================================================
 # PINÁCULO (LARGO)
@@ -1549,7 +1636,6 @@ def generar_clave_unica(nombre_completo: str, fecha_nac: date) -> str:
     return f"EM-{core[:4]}-{core[4:8]}-{core[8:12]}-{core[12:16]}"
 
 # =====================================================
-# =====================================================
 # INPUTS
 # =====================================================
 st.markdown("### 🗓️ Tus datos")
@@ -1569,9 +1655,48 @@ with col2:
         placeholder="Ej: Eugenia Mystikos"
     )
 
-calcular = st.button("✨ Recibir mi lectura")
-hoy = now_local().date()
 
+# -----------------------------------------------------
+# 💞 Compatibilidad de pareja (Express - GRATIS)
+# (Solo fecha de la otra persona. Sin clave.)
+# -----------------------------------------------------
+st.markdown("### 💞 Compatibilidad de pareja (Express · Gratis)")
+activar_compat_express = st.checkbox("Activar compatibilidad (Express)", value=False, key="compat_express_on")
+fecha_pareja_express = None
+if activar_compat_express:
+    fecha_pareja_express = st.date_input(
+        "Fecha de nacimiento de la otra persona",
+        key="fecha_pareja_express",
+        min_value=date(1940, 1, 1),
+        max_value=date(2040, 12, 31),
+        value=date(1990, 1, 1),
+    )
+
+calcular = st.button("✨ Recibir mi lectura")
+hoy = date.today()
+
+st.markdown("### 📌 Datos opcionales Premium")
+
+cA, cB = st.columns(2)
+
+with cA:
+    telefono = st.text_input(
+        "📞 Teléfono (opcional)",
+        value="",
+        placeholder="Ej: +58 412 000 0000",
+        key="telefono_premium"
+    )
+
+with cB:
+    direccion_apto = st.text_input(
+        "🏠 Dirección / Apto (opcional)",
+        value="",
+        placeholder="Ej: Torre A, Apto 12B",
+        key="direccion_premium"
+    )
+
+
+# =====================================================
 # CÁLCULOS
 # =====================================================
 es = esencia(fecha_nac)
@@ -1642,70 +1767,91 @@ if calcular:
     st.markdown(f"### 🌙 Energía de hoy — Número {dp}")
     st.markdown(f'<div class="em-card">{lectura_resumida(dp)}</div>', unsafe_allow_html=True)
 
-    st.markdown("### 💡 Pronóstico clave")
-    em_section("Pronóstico esencial del momento", "🧿")
+    # =====================================================
+    # VIBRACIONES PREMIUM
+    # =====================================================
+    st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
 
-    em_card("Amor y vínculos", "💗", frase_categoria(FRASES_AMOR, ap),
-            "Lectura base para comprender la dinámica afectiva activa.")
-    em_card("Dinero y propósito material", "💰", frase_categoria(FRASES_DINERO, ap),
-            "Señal práctica sobre decisiones, orden y movimiento económico.")
-    em_card("Energía emocional", "🌊", frase_categoria(FRASES_EMOCIONAL, ap),
-            "Clima interno actual y forma consciente de regularlo.")
-    em_card("Protección energética", "🛡️", frase_categoria(FRASES_PROTECCION, ap),
-            "Recomendación para resguardar tu campo energético.")
-
-    # 💞 Compatibilidad Express (4 líneas)
-    st.markdown("### 💞 Compatibilidad de pareja (Express)")
-    activar_comp = st.checkbox("Activar compatibilidad (Express)", value=False, key="comp_express_on")
-    if activar_comp:
-        fecha_pareja = st.date_input(
-            "Fecha de nacimiento de la otra persona",
-            min_value=date(1940, 1, 1),
-            max_value=date(2040, 12, 31),
-            value=date(1990, 1, 1),
-            key="fecha_pareja_express",
+    # TELÉFONO
+    if telefono.strip():
+        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
+        st.markdown(
+            f"""
+            <div class="em-card">
+              <div class="em-muted">Vibración activa por tu número de contacto</div>
+              <div style="font-size:1.03rem; line-height:1.75;">
+                {texto_tel}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-        comp_num = compatibilidad_numero(fecha_nac, fecha_pareja)
-        st.markdown(f"**Número de compatibilidad:** {comp_num}")
-        st.markdown(f'<div class="em-card">{compatibilidad_expres(comp_num)}</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="em-card em-muted">Activa la casilla para ver la compatibilidad con una fecha de nacimiento.</div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="em-card em-muted">📞 Agrega un teléfono para activar esta lectura.</div>',
+            unsafe_allow_html=True
+        )
 
-    # Pináculo y Arcano
-    st.markdown("### 🏔️ Pináculo (pirámide completa)")
+    # HOGAR
+    if direccion_apto.strip():
+        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
+        st.markdown(
+            f"""
+            <div class="em-card">
+              <div class="em-muted">Vibración activa por tu espacio personal</div>
+              <div style="font-size:1.03rem; line-height:1.75;">
+                {texto_dir}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            '<div class="em-card em-muted">🏠 Agrega tu dirección o apto para activar esta lectura.</div>',
+            unsafe_allow_html=True
+        )
+
+    # =====================================================
+    # PINÁCULO Y ARCANO (SIEMPRE SE MUESTRAN)
+    # =====================================================
+    
+    # -------------------------------------------------
+    # 💞 Compatibilidad de pareja (Express - GRATIS)
+    # -------------------------------------------------
+    if activar_compat_express and fecha_pareja_express:
+        comp_ex = compatibilidad_numero(fecha_nac, fecha_pareja_express)
+        st.markdown("### 💞 Compatibilidad de pareja (Express · Gratis)")
+        em_card(
+            f"Compatibilidad Express · Número {comp_ex}",
+            "💞",
+            compatibilidad_express_texto(comp_ex),
+            "Express = orientación rápida. Para el análisis largo, está en Premium."
+        )
+
+st.markdown("### 🏔️ Pináculo (pirámide completa)")
     st.markdown(
-        f'<div class="em-card"><div class="em-muted">Base: {pin["base"]} · Medio: {pin["medio"]} · Cima: {pin["cima"]}</div>'
-        f'<div style="margin-top:10px;">{pinaculo_micro(pin)}</div></div>',
+        f"""
+        <div class="em-card">
+          <div class="em-muted">Base: {pin['base']} · Medio: {pin['medio']} · Cima: {pin['cima']}</div>
+          <div style="margin-top:10px;">{pinaculo_micro(pin)}</div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
     st.markdown("### 🃏 Arcano mayor semanal")
     st.markdown(f'<div class="em-card">{arcano_micro(arc)}</div>', unsafe_allow_html=True)
 
-    # PDF (Lectura esencial)
-    pdf_resumido = build_pdf_bytes(
-        f"{APP_TITLE} · Tu Lectura · {BRAND}",
-        [
-            ("Datos", f"Nombre: {nombre or '—'}\nFecha de nacimiento: {fecha_nac}\nGenerado: {hoy}"),
-            ("Año personal", f"Número {ap}\n\n{lectura_resumida(ap)}"),
-            ("Esencia", f"Número {es}\n\n{lectura_resumida(es)}"),
-            ("Mi nombre completo", f"Número {num_nombre if num_nombre else '—'}\n\n{lectura_resumida(num_nombre) if num_nombre else 'Escribe tu nombre completo para ver esta sección.'}"),
-            ("Mi misión", f"Número {mis}\n\n{lectura_resumida(mis)}"),
-            ("Mi energía de hoy", f"Número {dp}\n\n{lectura_resumida(dp)}"),
-            ("Pronóstico clave", f"{frase_categoria(FRASES_AMOR, ap)}\n{frase_categoria(FRASES_DINERO, ap)}\n{frase_categoria(FRASES_EMOCIONAL, ap)}\n{frase_categoria(FRASES_PROTECCION, ap)}"),
-            ("Mi pináculo (pirámide completa)", f"Base: {pin['base']} | Medio: {pin['medio']} | Cima: {pin['cima']}\n\n{pinaculo_micro(pin)}"),
-            ("Arcano mayor semanal", arcano_micro(arc)),
-        ]
-    )
-
+    # =====================================================
+    # PDF
+    # =====================================================
     st.download_button(
         "⬇️ Descargar PDF (Tu Lectura Mystika)",
         data=pdf_resumido,
         file_name=f"Lectura_Numerologica_Esencial_{BRAND}.pdf",
         mime="application/pdf",
     )
-
 
 else:
     st.caption("Tip: completa tu nombre y fecha, luego toca el botón para ver tu lectura.")
@@ -1776,69 +1922,6 @@ if clave_ingresada:
 
     st.success("Versión completa desbloqueada ✅")
 
-    # =====================================================
-    # 📌 Datos opcionales Premium (Teléfono / Hogar)
-    # =====================================================
-    st.markdown("### 📌 Datos opcionales Premium")
-    cA, cB = st.columns(2)
-    with cA:
-        telefono = st.text_input(
-            "📞 Teléfono (opcional)",
-            value="",
-            placeholder="Ej: +58 412 000 0000",
-            key="telefono_premium"
-        )
-    with cB:
-        direccion_apto = st.text_input(
-            "🏠 Dirección / Apto (opcional)",
-            value="",
-            placeholder="Ej: Torre A, Apto 12B",
-            key="direccion_premium"
-        )
-
-    num_tel = numero_apto(telefono) if telefono.strip() else 0
-    texto_tel = TEXTO_TELEFONO.get(num_tel, "Aún no ingresaste un teléfono válido para calcular su vibración.")
-
-    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-    texto_dir = TEXTO_HOGAR.get(num_dir, "Aún no ingresaste una dirección/apto válido para calcular su vibración.")
-
-    # =====================================================
-    # 💞 Compatibilidad Premium (fecha + energía de nombres)
-    # =====================================================
-    st.markdown("### 💞 Compatibilidad de pareja (Premium)")
-    cP1, cP2 = st.columns(2)
-    with cP1:
-        nombre_pareja = st.text_input(
-            "Nombre completo de la otra persona (opcional)",
-            max_chars=40,
-            value="",
-            key="nombre_pareja_premium"
-        )
-    with cP2:
-        fecha_pareja_p = st.date_input(
-            "Fecha de nacimiento de la otra persona",
-            min_value=date(1940, 1, 1),
-            max_value=date(2040, 12, 31),
-            value=date(1990, 1, 1),
-            key="fecha_pareja_premium",
-        )
-
-    comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
-    st.markdown(f"**Número de compatibilidad:** {comp_p}")
-    st.markdown(f'<div class="em-card">{COMPATIBILIDAD_PREMIUM.get(comp_p, compatibilidad_expres(comp_p))}</div>', unsafe_allow_html=True)
-
-    if nombre_validado and nombre_pareja.strip():
-        nn1 = numero_nombre(nombre_validado)
-        nn2 = numero_nombre(nombre_pareja)
-        comp_nom = reducir_numero(nn1 + nn2)
-        st.markdown(
-            f'<div class="em-card em-muted">Energía de nombres: {nn1} + {nn2} → <b>{comp_nom}</b>. '
-            f'Esto describe el “clima” comunicacional y la esencia simbólica del vínculo.</div>',
-            unsafe_allow_html=True
-        )
-
-
-
     nombre_validado = nombre_compra.strip()
     fecha_validada = fecha_compra
 
@@ -1892,7 +1975,34 @@ if clave_ingresada:
         st.markdown("#### 🏠 Vibración de la dirección")
         st.write(f"*Número:* {num_dir}")
         st.write(mensaje_vibracion_direccion(num_dir))
-        st.markdown("## 🌙 Secciones Premium")
+    
+    # -------------------------------------------------
+    # 💞 Compatibilidad de pareja (Premium - LARGO)
+    # -------------------------------------------------
+    st.markdown("### 💞 Compatibilidad de pareja (Premium)")
+    c1, c2 = st.columns(2)
+    with c1:
+        nombre_pareja_p = st.text_input(
+            "Nombre completo de la otra persona (opcional)",
+            key="nombre_pareja_premium",
+            max_chars=40,
+            placeholder="Ej: Nombre Apellido"
+        )
+    with c2:
+        fecha_pareja_p = st.date_input(
+            "Fecha de nacimiento de la otra persona",
+            key="fecha_pareja_premium",
+            min_value=date(1940, 1, 1),
+            max_value=date(2040, 12, 31),
+            value=date(1990, 1, 1),
+        )
+
+    comp_p = compatibilidad_numero(fecha_validada, fecha_pareja_p)
+    st.write(f"Número {comp_p}")
+    st.write(parrafo_premium_categoria(comp_p, mp_p, sp_p, dp_p, "Compatibilidad de pareja"))
+
+
+    st.markdown("## 🌙 Secciones Premium")
 
     st.markdown("### 🌿 1) Esencia")
     st.write(f"Número {es_p}")
@@ -1936,16 +2046,15 @@ if clave_ingresada:
     st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
 
     st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
-
     if telefono.strip():
-        st.markdown(f"### 📞 Teléfono — Vibración {num_tel}")
-        st.markdown(f'<div class="em-card">{texto_tel}</div>', unsafe_allow_html=True)
+        st.markdown(f"### 📞 Teléfono — Número {num_tel}")
+        st.write(texto_telefono(num_tel))
     else:
         st.info("Si deseas, agrega un teléfono para activar esta sección.")
 
     if direccion_apto.strip():
-        st.markdown(f"### 🏠 Hogar / Dirección — Vibración {num_dir}")
-        st.markdown(f'<div class="em-card">{texto_dir}</div>', unsafe_allow_html=True)
+        st.markdown(f"### 🏠 Dirección / Apto — Número {num_dir}")
+        st.write(texto_hogar(num_dir))
     else:
         st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
 
@@ -1988,23 +2097,3 @@ if clave_ingresada:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
-def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
-    """Compatibilidad base (1–9 + maestros) a partir del Sendero de Vida de ambos."""
-    return reducir_numero(sendero_vida(fecha_a) + sendero_vida(fecha_b))
-
-COMPATIBILIDAD_PREMIUM = {
-    1: "Compatibilidad 1: vínculo de impulso y reinicio. La relación crece con independencia sana, liderazgo compartido y decisiones claras. Eviten competir por el control: aquí funciona el respeto y la admiración mutua. Si hay fricción, suele venir por orgullo o por querer tener la razón. La medicina es simple: acuerdos y acciones, no suposiciones. Cuando se alinean, juntos abren caminos rápido y se vuelven motor el uno del otro.",
-    2: "Compatibilidad 2: vínculo de cooperación y ternura. Se complementan cuando priorizan la escucha, la paciencia y el cuidado emocional. Este lazo pide delicadeza: palabras suaves, ritmos naturales y honestidad afectiva. El riesgo es callar para evitar conflicto y acumular resentimiento. La medicina es hablar a tiempo y sostener acuerdos. Si se cuidan, la relación se vuelve hogar emocional.",
-    3: "Compatibilidad 3: vínculo de alegría y comunicación. Hay chispa mental, humor y creatividad. El riesgo es la dispersión o evitar profundidad. La medicina es coherencia: decir y hacer. Si ordenan su comunicación, juntos expanden proyectos y disfrute.",
-    4: "Compatibilidad 4: vínculo de construcción y compromiso. Es una relación para crear base: hogar, proyecto, estabilidad. Funciona con disciplina y acuerdos claros. El riesgo es la rigidez o sentir que el amor se volvió obligación. La medicina es ternura dentro de la estructura: detalles, reconocimiento y flexibilidad. Si lo hacen, construyen algo duradero.",
-    5: "Compatibilidad 5: vínculo de libertad y cambio. Se activan con movimiento, novedad y evolución. El riesgo es la inestabilidad o huir cuando algo se pone serio. La medicina es libertad con responsabilidad: límites claros y espacios propios. Si se respetan, la relación es aventura consciente y no caos.",
-    6: "Compatibilidad 6: vínculo de amor, cuidado y familia. Hay potencial de sostén y pertenencia. El riesgo es cargarse de más o volverse exigentes. La medicina es equilibrio: cuidar sin control, amar sin sacrificio. Si se eligen con madurez, la relación se armoniza y florece.",
-    7: "Compatibilidad 7: vínculo de profundidad e intimidad espiritual. Se conectan desde lo sutil y lo interno. El riesgo es aislarse o analizar tanto que se apaga la emoción. La medicina es presencia: conversación honesta y tiempo de calidad. Si se abren, el vínculo se vuelve sabio y real.",
-    8: "Compatibilidad 8: vínculo de poder y manifestación. Juntos pueden lograr metas materiales y crecer en abundancia. El riesgo es el control o medir el amor por resultados. La medicina es ética y corazón: acuerdos, transparencia y ternura. Si se alinean, se vuelven un equipo fuerte.",
-    9: "Compatibilidad 9: vínculo de cierre, compasión e integración. La relación viene a sanar y elevar conciencia. El riesgo es cargar historias pasadas o drama. La medicina es honestidad y cierre limpio: soltar lo que pesa y elegir desde amor maduro. Si lo hacen, el vínculo transforma y libera.",
-    11:"Compatibilidad 11: vínculo de inspiración e intuición elevada. Conexión intensa y visión. El riesgo es idealizar o absorber demasiado. La medicina es límites energéticos, comunicación clara y rutina. Si se cuidan, el vínculo inspira y guía.",
-    22:"Compatibilidad 22: vínculo constructor de legado. Potencial para materializar proyectos grandes y dejar huella. El riesgo es la presión y el perfeccionismo. La medicina es plan, paciencia y amor práctico. Si se organizan, construyen algo significativo.",
-    33:"Compatibilidad 33: vínculo de amor consciente y servicio. Vocación de acompañar y sostener desde madurez. El riesgo es sacrificarse o agotarse. La medicina es límites, autocuidado y acuerdos justos. Si se equilibran, el vínculo nutre profundamente."
-}
-
-
