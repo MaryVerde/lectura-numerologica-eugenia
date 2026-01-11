@@ -1423,27 +1423,37 @@ def build_pdf_bytes(
 
 
 # =====================================================
-# FORMULARIO ÚNICO
+# 4. FORMULARIO ÚNICO — SOLO EXPRESS
 # =====================================================
-with st.form("lectura"):
+with st.form("lectura_express"):
+
     st.markdown("## ✍️ Ingresa tus datos")
-    nombre_completo = st.text_input("Nombre completo *")
-    fecha_nac = st.date_input("Fecha de nacimiento *")
+
+    nombre_completo = st.text_input(
+        "Nombre completo *"
+    )
+
+    fecha_nac = st.date_input(
+        "Fecha de nacimiento *",
+        min_value=date(1936, 1, 1),
+        max_value=date(2036, 12, 31)
+    )
 
     st.markdown("### 💞 Compatibilidad (opcional)")
-    activar_compat_express = st.checkbox("Activar compatibilidad express (Gratis)", value=False)
-    fecha_pareja_express = st.date_input("Fecha de nacimiento de la pareja (si activas compatibilidad)", value=date(2000,1,1))
+    activar_compat_express = st.checkbox(
+        "Activar compatibilidad express (Gratis)",
+        value=False
+    )
 
-    st.markdown("### 🏠📞 Datos (SOLO PREMIUM)")
-    direccion_apto = st.text_input("Dirección / hogar (Premium)", "")
-    telefono = st.text_input("Teléfono (Premium)", "")
+    fecha_pareja_express = st.date_input(
+        "Fecha de nacimiento de la pareja",
+        value=date(2000, 1, 1)
+    )
 
-    enviar = st.form_submit_button("✨ Generar lectura")
+    enviar = st.form_submit_button("✨ Generar lectura express")
 
-if not enviar:
-    st.stop()
-
-# =====================================================
+    
+ #==================================================   
 # VALIDACIÓN
 # =====================================================
 if not nombre_completo or not fecha_nac:
