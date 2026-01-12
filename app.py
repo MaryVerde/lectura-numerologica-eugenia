@@ -628,6 +628,514 @@ ENERGIA_DIA_365 = {
 
 def energia_del_dia(hoy: date) -> str:
     return ENERGIA_DIA_365.get(dia_del_ano(hoy), "Hoy: respira, ordena y elige con amor.")
+COMPATIBILIDAD_EXPRES = {
+    1: (
+        "Relación basada en iniciativa y empuje mutuo.\n"
+        "Ambos necesitan respetar la independencia.\n"
+        "La clave está en no competir entre sí.\n"
+        "Cuando cooperan, avanzan con fuerza."
+    ),
+    2: (
+        "Relación de apoyo, sensibilidad y cooperación.\n"
+        "Existe una fuerte necesidad de estar juntos.\n"
+        "La clave es no perder la individualidad.\n"
+        "El vínculo crece con cuidado emocional."
+    ),
+    3: (
+        "Relación dinámica, comunicativa y creativa.\n"
+        "El diálogo es el cuerpo del vínculo.\n"
+        "Necesitan expresar emociones con claridad.\n"
+        "Cuando se escuchan, la relación florece."
+    ),
+    4: (
+        "Relación que busca estabilidad y compromiso.\n"
+        "Se construye paso a paso.\n"
+        "La clave es flexibilizar sin perder estructura.\n"
+        "Juntos pueden crear una base sólida."
+    ),
+    5: (
+        "Relación marcada por cambio y movimiento.\n"
+        "Necesitan libertad y experiencias compartidas.\n"
+        "El reto es sostener continuidad.\n"
+        "La relación crece con acuerdos claros."
+    ),
+    6: (
+        "Relación protectora y orientada al cuidado.\n"
+        "Existe sentido de familia y pertenencia.\n"
+        "El reto es no sobrecargarse emocionalmente.\n"
+        "El amor se sostiene con equilibrio."
+    ),
+    7: (
+        "Relación introspectiva y profunda.\n"
+        "Ambos necesitan espacios personales.\n"
+        "La clave es respetar silencios.\n"
+        "La conexión se fortalece desde la conciencia."
+    ),
+    8: (
+        "Relación intensa y orientada a objetivos.\n"
+        "Existe ambición y empuje conjunto.\n"
+        "El reto es no caer en control.\n"
+        "El vínculo se equilibra con sensibilidad."
+    ),
+    9: (
+        "Relación de cierre, sanación y aprendizaje.\n"
+        "Vínculo que transforma profundamente.\n"
+        "Puede remover emociones pasadas.\n"
+        "El amor crece al soltar lo viejo."
+    ),
+    11: (
+        "Relación altamente sensible e intuitiva.\n"
+        "Existe conexión energética fuerte.\n"
+        "El reto es anclarse a lo concreto.\n"
+        "La relación pide coherencia emocional."
+    ),
+    22: (
+        "Relación con propósito y visión compartida.\n"
+        "Juntos construyen algo significativo.\n"
+        "El reto es no cargar demasiado peso.\n"
+        "El vínculo crece con organización."
+    ),
+    33: (
+        "Relación de entrega y servicio mutuo.\n"
+        "Existe amor profundo y compasivo.\n"
+        "El reto es cuidar la energía personal.\n"
+        "El vínculo sana cuando hay límites."
+    )
+}
+    
+COMPATIBILIDAD_PROFUNDA = {
+
+    1: (
+        "Esta relación se construye desde la iniciativa y la fuerza personal.\n"
+        "Ambos sienten el impulso de avanzar y liderar.\n"
+        "Existe admiración mutua cuando se respetan los espacios.\n"
+        "El reto aparece cuando ninguno quiere ceder.\n"
+        "La relación pide reconocer al otro sin competir.\n"
+        "El amor crece cuando hay apoyo y no imposición.\n"
+        "Es un vínculo que necesita objetivos compartidos.\n"
+        "La admiración sostiene el deseo.\n"
+        "La independencia es una base, no una amenaza.\n"
+        "Cuando se acompañan, avanzan con más claridad.\n"
+        "La relación florece con respeto.\n"
+        "El orgullo debe transformarse en cooperación.\n"
+        "Ambos aprenden a liderar juntos.\n"
+        "El amor se fortalece con reconocimiento.\n"
+        "La unión se consolida cuando hay propósito común."
+    ),
+
+    2: (
+        "Esta relación se basa en la sensibilidad y el acompañamiento emocional.\n"
+        "Existe una fuerte necesidad de cercanía.\n"
+        "Ambos perciben profundamente al otro.\n"
+        "La relación busca cooperación y apoyo mutuo.\n"
+        "El riesgo es perder la individualidad.\n"
+        "El amor crece cuando hay equilibrio entre dar y recibir.\n"
+        "Es un vínculo que se nutre del cuidado.\n"
+        "La ternura es un lenguaje central.\n"
+        "La relación se resiente si uno se anula.\n"
+        "La clave está en apoyarse sin depender.\n"
+        "El vínculo se fortalece con diálogo emocional.\n"
+        "La unión es suave, pero profunda.\n"
+        "Ambos aprenden a sostenerse.\n"
+        "El amor se expresa en gestos pequeños.\n"
+        "La relación prospera con armonía consciente."
+    ),
+
+    3: (
+        "Esta relación se construye a través de la comunicación consciente.\n"
+        "El vínculo necesita palabra, expresión y diálogo constante.\n"
+        "Ambos se estimulan mental y emocionalmente.\n"
+        "La creatividad es un puente de unión.\n"
+        "Cuando callan lo que sienten, surge distancia.\n"
+        "El cuerpo de la relación es la conversación.\n"
+        "Existe potencial para alegría compartida.\n"
+        "También puede aparecer dispersión emocional.\n"
+        "El vínculo mejora al expresar necesidades reales.\n"
+        "No se trata de hablar más, sino de hablar con verdad.\n"
+        "La relación pide escucha activa.\n"
+        "Cuando se comunican desde el corazón, crecen.\n"
+        "El humor sana tensiones.\n"
+        "La relación florece con autenticidad.\n"
+        "El amor se sostiene en la palabra clara."
+    ),
+
+    4: (
+        "Esta relación busca estabilidad, orden y compromiso.\n"
+        "Ambos necesitan seguridad emocional.\n"
+        "El vínculo se construye paso a paso.\n"
+        "La constancia es una base importante.\n"
+        "El riesgo es caer en rigidez.\n"
+        "La relación crece cuando hay flexibilidad.\n"
+        "El amor se expresa en hechos concretos.\n"
+        "Ambos valoran la lealtad.\n"
+        "El vínculo se fortalece con acuerdos claros.\n"
+        "La rutina puede ser sostén o desgaste.\n"
+        "La clave es renovar sin destruir.\n"
+        "El compromiso une profundamente.\n"
+        "La relación se vuelve sólida con confianza.\n"
+        "Ambos aprenden a sostenerse en el tiempo.\n"
+        "El amor se consolida con coherencia."
+    ),
+
+    5: (
+        "Esta relación está marcada por el cambio y la libertad.\n"
+        "Ambos necesitan movimiento.\n"
+        "El vínculo se alimenta de experiencias compartidas.\n"
+        "La rutina debilita la conexión.\n"
+        "El reto es sostener continuidad emocional.\n"
+        "La relación florece con acuerdos claros.\n"
+        "Existe curiosidad mutua.\n"
+        "La atracción se renueva con novedad.\n"
+        "El riesgo es la inestabilidad.\n"
+        "La libertad necesita responsabilidad.\n"
+        "El amor crece cuando hay confianza.\n"
+        "Ambos aprenden a elegir conscientemente.\n"
+        "La relación se expande con flexibilidad.\n"
+        "El vínculo se fortalece con honestidad.\n"
+        "El amor se sostiene con compromiso libre."
+    ),
+
+    6: (
+        "Esta relación se basa en el cuidado y la protección.\n"
+        "Existe una fuerte energía de hogar.\n"
+        "Ambos buscan contención emocional.\n"
+        "El amor se expresa en responsabilidad afectiva.\n"
+        "El riesgo es sobrecargarse.\n"
+        "La relación necesita equilibrio.\n"
+        "Cuidar no es controlar.\n"
+        "El vínculo se fortalece con ternura.\n"
+        "La familia y el entorno pesan.\n"
+        "El amor madura con límites sanos.\n"
+        "Ambos aprenden a dar sin agotarse.\n"
+        "La relación florece con reciprocidad.\n"
+        "El compromiso es profundo.\n"
+        "La unión se nutre del respeto.\n"
+        "El amor se sostiene con cuidado consciente."
+    ),
+
+    7: (
+        "Esta relación es introspectiva y profunda.\n"
+        "Existe conexión espiritual.\n"
+        "Ambos necesitan espacios personales.\n"
+        "El silencio también comunica.\n"
+        "El riesgo es el aislamiento.\n"
+        "La relación crece con comprensión.\n"
+        "No todo se expresa con palabras.\n"
+        "El vínculo se fortalece con confianza.\n"
+        "La conexión es sutil pero intensa.\n"
+        "El amor pide paciencia.\n"
+        "Ambos aprenden a respetar procesos internos.\n"
+        "La unión se afina con conciencia.\n"
+        "El vínculo se profundiza con honestidad.\n"
+        "La relación madura lentamente.\n"
+        "El amor se sostiene desde la verdad interior."
+    ),
+
+    8: (
+        "Esta relación es intensa y orientada a objetivos.\n"
+        "Existe ambición compartida.\n"
+        "Ambos buscan crecer.\n"
+        "El poder puede unir o separar.\n"
+        "El reto es evitar luchas de control.\n"
+        "La relación florece con respeto mutuo.\n"
+        "El amor se fortalece con equilibrio emocional.\n"
+        "La unión pide sensibilidad.\n"
+        "El éxito compartido une.\n"
+        "La relación se debilita sin empatía.\n"
+        "Ambos aprenden a liderar juntos.\n"
+        "El vínculo madura con conciencia.\n"
+        "El amor necesita humanidad.\n"
+        "La relación se equilibra con humildad.\n"
+        "El vínculo prospera con coherencia."
+    ),
+
+    9: (
+        "Esta relación es profundamente transformadora.\n"
+        "Remueve memorias emocionales.\n"
+        "Existe aprendizaje mutuo.\n"
+        "El vínculo invita a sanar.\n"
+        "El reto es soltar el pasado.\n"
+        "La relación pide compasión.\n"
+        "El amor crece con perdón.\n"
+        "No es una relación ligera.\n"
+        "La unión cierra ciclos.\n"
+        "Ambos evolucionan.\n"
+        "El vínculo se profundiza con aceptación.\n"
+        "La relación libera cargas emocionales.\n"
+        "El amor se vuelve consciente.\n"
+        "El vínculo transforma a ambos.\n"
+        "La unión deja huella."
+    ),
+
+    11: (
+        "Esta relación es altamente sensible e intuitiva.\n"
+        "Existe conexión energética fuerte.\n"
+        "Ambos perciben emociones profundas.\n"
+        "El vínculo es inspirador.\n"
+        "El reto es sostener lo práctico.\n"
+        "La relación florece con coherencia.\n"
+        "La intuición guía el vínculo.\n"
+        "El amor es sutil.\n"
+        "La relación puede ser intensa.\n"
+        "Ambos deben cuidarse emocionalmente.\n"
+        "El vínculo pide equilibrio.\n"
+        "La unión inspira crecimiento.\n"
+        "La relación se fortalece con verdad.\n"
+        "El amor es profundo.\n"
+        "La conexión es espiritual."
+    ),
+
+    22: (
+        "Esta relación tiene propósito y visión compartida.\n"
+        "Ambos sienten misión conjunta.\n"
+        "El vínculo busca construir algo duradero.\n"
+        "El reto es no cargar demasiado.\n"
+        "La relación pide organización.\n"
+        "El amor crece con estructura.\n"
+        "La unión se fortalece con metas claras.\n"
+        "El compromiso es profundo.\n"
+        "Ambos se apoyan.\n"
+        "El vínculo se consolida con paciencia.\n"
+        "La relación madura con esfuerzo consciente.\n"
+        "El amor se sostiene en hechos.\n"
+        "La unión deja legado.\n"
+        "El vínculo se fortalece con coherencia.\n"
+        "La relación construye futuro."
+    ),
+
+    33: (
+        "Esta relación es de amor profundo y servicio mutuo.\n"
+        "Existe compasión intensa.\n"
+        "Ambos sienten responsabilidad emocional.\n"
+        "El amor es incondicional.\n"
+        "El reto es no sacrificarse en exceso.\n"
+        "La relación pide límites sanos.\n"
+        "El vínculo sana.\n"
+        "La unión es transformadora.\n"
+        "El amor es generoso.\n"
+        "Ambos deben cuidarse.\n"
+        "La relación florece con equilibrio.\n"
+        "El vínculo se fortalece con conciencia.\n"
+        "La unión eleva.\n"
+        "El amor es profundo.\n"
+        "La relación es sanadora."
+    ),
+}
+def compatibilidad_numero(fecha_a: date, fecha_b: date) -> int:
+    return reducir_numero(
+        (fecha_a.day + fecha_a.month + fecha_a.year) +
+        (fecha_b.day + fecha_b.month + fecha_b.year)
+    )
+
+def compatibilidad_express_texto(n: int) -> str:
+    return COMPATIBILIDAD_EXPRES.get(int(n), "Compatibilidad express no disponible.")
+
+def compatibilidad_profunda_texto(n: int) -> str:
+    return COMPATIBILIDAD_PROFUNDA.get(int(n), "Compatibilidad profunda no disponible.")
+
+TEXTO_HOGAR = {
+    1: (
+        "La vibración 1 en el hogar habla de independencia y nuevos comienzos.\n"
+        "Es un espacio que impulsa iniciativa, decisiones propias y liderazgo.\n"
+        "Puede sentirse solitario si no hay propósito claro.\n"
+        "Conviene activar orden, intención y metas visibles.\n"
+        "El hogar pide acción consciente, no dispersión.\n"
+        "Cuando se honra esta energía, se fortalece la autonomía interna."
+    ),
+    2: (
+        "La vibración 2 en el hogar enfatiza unión, cooperación y contención emocional.\n"
+        "Es un espacio sensible al clima emocional de quienes lo habitan.\n"
+        "Favorece vínculos, diálogo y apoyo mutuo.\n"
+        "Puede generar dependencia si no hay límites claros.\n"
+        "El equilibrio llega con armonía y respeto.\n"
+        "Un hogar 2 pide cuidado, escucha y suavidad."
+    ),
+    3: (
+        "La vibración 3 activa expresión, creatividad y movimiento interno.\n"
+        "Es un hogar que necesita comunicación y alegría.\n"
+        "Favorece reuniones, ideas y dinamismo.\n"
+        "El desorden emocional puede reflejarse físicamente.\n"
+        "Conviene sostener rutinas mínimas para estabilizar la energía.\n"
+        "Cuando fluye bien, el hogar se vuelve inspirador."
+    ),
+    4: (
+        "La vibración 4 aporta estructura, estabilidad y base sólida.\n"
+        "Es un hogar que sostiene procesos largos y compromiso.\n"
+        "Favorece disciplina, constancia y sensación de seguridad.\n"
+        "Puede sentirse rígido si no se flexibiliza.\n"
+        "El orden consciente es clave para su equilibrio.\n"
+        "Aquí se construye a largo plazo."
+    ),
+    5: (
+        "La vibración 5 trae cambio, movimiento y necesidad de libertad.\n"
+        "Es un hogar inquieto, con entradas y salidas constantes.\n"
+        "Favorece adaptación y experiencias nuevas.\n"
+        "Puede generar inestabilidad si no hay centro.\n"
+        "Conviene crear anclajes energéticos claros.\n"
+        "El hogar pide flexibilidad con conciencia."
+    ),
+    6: (
+        "La vibración 6 está ligada al cuidado, la familia y la responsabilidad.\n"
+        "Es un hogar protector, contenedor y emocionalmente fuerte.\n"
+        "Favorece vínculos afectivos y sentido de pertenencia.\n"
+        "Puede sobrecargar a quien cuida de todos.\n"
+        "El equilibrio llega al repartir responsabilidades.\n"
+        "Un hogar 6 sana cuando hay reciprocidad."
+    ),
+    7: (
+        "La vibración 7 invita a introspección y silencio interior.\n"
+        "Es un hogar que pide momentos de soledad y reflexión.\n"
+        "Favorece estudio, espiritualidad y conexión interna.\n"
+        "Puede aislar si no se equilibra con lo social.\n"
+        "Conviene respetar los tiempos de retiro.\n"
+        "Aquí se ordena la mente y el espíritu."
+    ),
+    8: (
+        "La vibración 8 activa poder personal y estructura material.\n"
+        "Es un hogar que refleja logros, responsabilidades y metas.\n"
+        "Favorece enfoque, dirección y autoridad interna.\n"
+        "Puede generar tensión si todo se vuelve control.\n"
+        "El equilibrio surge al unir propósito y bienestar.\n"
+        "El hogar sostiene el crecimiento consciente."
+    ),
+    9: (
+        "La vibración 9 habla de cierre, limpieza y liberación emocional.\n"
+        "Es un hogar que invita a soltar lo viejo.\n"
+        "Favorece procesos de sanación y perdón.\n"
+        "Puede remover memorias profundas.\n"
+        "Conviene acompañar los cierres con intención.\n"
+        "Aquí se prepara un nuevo comienzo."
+    ),
+    11: (
+        "La vibración 11 eleva la sensibilidad y la percepción.\n"
+        "Es un hogar altamente energético y emocional.\n"
+        "Favorece intuición, inspiración y conciencia.\n"
+        "Puede generar sobreestimulación si no hay orden.\n"
+        "El equilibrio llega con anclaje y rutina.\n"
+        "Un hogar 11 pide coherencia interna."
+    ),
+    22: (
+        "La vibración 22 sostiene construcción consciente y propósito elevado.\n"
+        "Es un hogar que materializa proyectos importantes.\n"
+        "Favorece estabilidad con visión a largo plazo.\n"
+        "Puede sentirse exigente si no hay descanso.\n"
+        "Conviene equilibrar acción y cuidado.\n"
+        "Aquí se construye legado."
+    ),
+    33: (
+        "La vibración 33 es servicio, amor consciente y entrega.\n"
+        "Es un hogar que sostiene a otros emocionalmente.\n"
+        "Favorece compasión, contención y guía.\n"
+        "Puede generar desgaste si no hay autocuidado.\n"
+        "El equilibrio nace al cuidarse para cuidar.\n"
+        "Un hogar 33 sana cuando hay límites amorosos."
+    ),
+}
+
+def texto_hogar(num_dir: int) -> str:
+    return TEXTO_HOGAR.get(num_dir, "Hogar: equilibrio, limpieza y armonía.")
+
+
+TEXTO_TELEFONO = {
+    1: (
+        "Tu número de teléfono vibra en 1, una energía de iniciativa y liderazgo.\n"
+        "Las llamadas activan decisiones rápidas y comienzos importantes.\n"
+        "Es un número que impulsa a tomar la palabra sin rodeos.\n"
+        "Cuidado con la impulsividad o el tono autoritario.\n"
+        "La clave es comunicar con claridad y propósito.\n"
+        "Cuando lideras desde la conciencia, la comunicación fluye."
+    ),
+    2: (
+        "Tu número de teléfono vibra en 2, una energía de cooperación y escucha.\n"
+        "Las conversaciones buscan acuerdos, apoyo y entendimiento mutuo.\n"
+        "Es ideal para mediación, vínculos y trabajo en equipo.\n"
+        "Puede haber tendencia a callar por evitar conflicto.\n"
+        "La clave es expresar lo que sientes sin perder armonía.\n"
+        "La comunicación consciente fortalece los vínculos."
+    ),
+    3: (
+        "Tu número de teléfono vibra en 3, energía de expresión y creatividad.\n"
+        "Las llamadas activan ideas, contactos y movimiento social.\n"
+        "Favorece conversaciones ligeras, inspiradoras y expansivas.\n"
+        "Riesgo de dispersión o hablar sin profundidad.\n"
+        "La clave es enfocar el mensaje.\n"
+        "Cuando comunicas con intención, tu voz inspira."
+    ),
+    4: (
+        "Tu número de teléfono vibra en 4, energía de orden y estructura.\n"
+        "Las llamadas se orientan a temas prácticos y concretos.\n"
+        "Favorece acuerdos claros, compromisos y organización.\n"
+        "Puede sentirse rígido o poco flexible.\n"
+        "La clave es abrir espacio a la escucha.\n"
+        "La comunicación firme y clara genera estabilidad."
+    ),
+    5: (
+        "Tu número de teléfono vibra en 5, energía de cambio y movimiento.\n"
+        "Las llamadas traen novedades, viajes y oportunidades inesperadas.\n"
+        "Favorece la adaptabilidad y la negociación.\n"
+        "Puede generar inestabilidad o exceso de estímulos.\n"
+        "La clave es no dispersarte.\n"
+        "Comunicar con conciencia ordena el cambio."
+    ),
+    6: (
+        "Tu número de teléfono vibra en 6, energía de cuidado y responsabilidad.\n"
+        "Las llamadas suelen vincularse con familia, trabajo y compromiso.\n"
+        "Favorece conversaciones protectoras y empáticas.\n"
+        "Riesgo de cargar problemas ajenos.\n"
+        "La clave es poner límites sanos.\n"
+        "La comunicación equilibrada cuida sin desgastarte."
+    ),
+    7: (
+        "Tu número de teléfono vibra en 7, energía de introspección y análisis.\n"
+        "Las llamadas invitan a reflexionar antes de hablar.\n"
+        "Favorece conversaciones profundas y selectivas.\n"
+        "Puede generar distancia o silencio prolongado.\n"
+        "La clave es compartir lo que piensas.\n"
+        "Comunicar desde la verdad interna fortalece tu voz."
+    ),
+    8: (
+        "Tu número de teléfono vibra en 8, energía de poder y concreción.\n"
+        "Las llamadas se asocian a trabajo, decisiones y autoridad.\n"
+        "Favorece negociaciones y temas materiales.\n"
+        "Riesgo de control o dureza verbal.\n"
+        "La clave es liderar con ética.\n"
+        "La comunicación consciente sostiene tu poder."
+    ),
+    9: (
+        "Tu número de teléfono vibra en 9, energía de cierre y conciencia.\n"
+        "Las llamadas traen mensajes importantes de liberación.\n"
+        "Favorece conversaciones empáticas y sanadoras.\n"
+        "Puede haber cansancio emocional.\n"
+        "La clave es no absorberlo todo.\n"
+        "Comunicar con compasión eleva la vibración."
+    ),
+    11: (
+        "Tu número de teléfono vibra en 11, energía maestra de intuición.\n"
+        "Las llamadas activan mensajes clave y señales importantes.\n"
+        "Favorece la inspiración y la guía.\n"
+        "Puede generar nerviosismo o sobrecarga mental.\n"
+        "La clave es bajar la información a tierra.\n"
+        "La comunicación consciente canaliza tu visión."
+    ),
+    22: (
+        "Tu número de teléfono vibra en 22, energía maestra de construcción.\n"
+        "Las llamadas están ligadas a proyectos grandes y responsabilidad.\n"
+        "Favorece acuerdos de largo alcance.\n"
+        "Puede sentirse peso o exigencia.\n"
+        "La clave es delegar y ordenar.\n"
+        "Comunicar con estructura sostiene grandes logros."
+    ),
+    33: (
+        "Tu número de teléfono vibra en 33, energía maestra de servicio.\n"
+        "Las llamadas activan ayuda, enseñanza y acompañamiento.\n"
+        "Favorece mensajes compasivos y orientadores.\n"
+        "Riesgo de sacrificio excesivo.\n"
+        "La clave es cuidarte al comunicar.\n"
+        "La palabra consciente se vuelve sanadora."
+    ),
+}
+def texto_telefono(num_tel: int) -> str:
+    return TEXTO_TELEFONO.get( num_tel, "Teléfono: comunicación consciente y límites sanos.")
 
 # =====================================================
 # PAGO: TEXTOS PROFUNDOS (10–12 líneas aprox)
@@ -808,7 +1316,16 @@ with col2:
         value="",
         placeholder="Ej: Eugenia Mystikos"
     )
+st.markdown("### 💞 Compatibilidad (opcional)")
+activar_compat_express = st.checkbox("Activar compatibilidad express", value=False)
 
+fecha_pareja_express = st.date_input(
+    "Fecha de nacimiento de la pareja",
+    min_value=date(1936, 1, 1),
+    max_value=date(2036, 12, 31),
+    value=date(2000, 1, 1),
+    disabled=not activar_compat_express
+)
 calcular = st.button("✨ Ver mi lectura ahora")
 hoy = date.today()
 
@@ -827,6 +1344,8 @@ dp = dia_personal(mp, hoy.day)
 arc = arcano_semanal()
 pin = pinaculo_piramide(fecha_nac)
 num_nombre = numero_nombre(nombre) if nombre.strip() else 0
+
+
 
 # =====================================================
 # MOSTRAR RESUMIDA (GRATIS) SOLO AL PRESIONAR BOTÓN
@@ -859,6 +1378,23 @@ if calcular:
 
         st.write(f"Mi energía de hoy — Número {dp}")
         st.write(lectura_resumida(dp))
+
+        hoy = date.today()
+        dia_del_ano = hoy.timetuple().tm_yday  # 1 a 365 (366 en bisiesto)
+
+        mensaje_365 = ENERGIA_DIA_365 .get(
+            dia_del_ano,
+            "Hoy es un día para observar, integrar y no forzar."
+        )
+
+        st.markdown("### 🌞 Energía universal del día (365)")
+        st.write(mensaje_365)
+
+        if activar_compat_express:
+            comp_ex = compatibilidad_numero(fecha_nac, fecha_pareja_express)
+            st.markdown(f"### 💞 Compatibilidad Express · Número {comp_ex}")
+            st.write(compatibilidad_express_texto(comp_ex))
+
 
         # ✅ AQUÍ VAN LOS 4 BLOQUES CORTOS GRATIS (lo que me pediste)
         st.markdown("#### 💡 Pronóstico clave (gratis)")
@@ -993,6 +1529,18 @@ if clave_ingresada:
     num_tel = numero_apto(telefono) if telefono.strip() else 0
     num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
 
+    st.markdown("### 💞 Compatibilidad (Premium)")
+    activar_compat_premium = st.checkbox("Activar compatibilidad profunda", value=False, key="compat_premium")
+
+    fecha_pareja_premium = st.date_input(
+    "Fecha de nacimiento de la pareja (Premium)",
+    min_value=date(1936, 1, 1),
+    max_value=date(2036, 12, 31),
+    value=date(2000, 1, 1),
+    disabled=not activar_compat_premium,
+    key="fecha_pareja_premium"
+)
+
     # =====================================================
     # UI – VERSIÓN COMPLETA
     # =====================================================
@@ -1061,6 +1609,12 @@ if clave_ingresada:
     st.markdown("### 9) Pináculo (pirámide completa)")
     st.write(f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}")
     st.write(pinaculo_micro(pin_p))
+
+    if activar_compat_premium:
+        comp_pr = compatibilidad_numero(fecha_validada, fecha_pareja_premium)
+        st.markdown(f"### 💞 Compatibilidad Profunda · Número {comp_pr}")
+        st.write(compatibilidad_profunda_texto(comp_pr))
+
 
     # PDF COMPLETO
     secciones_completa = [
