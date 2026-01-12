@@ -1592,13 +1592,13 @@ if clave_ingresada:
     st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
     if num_tel:
         st.markdown(f"### Teléfono — Número {num_tel}")
-        st.write(parrafo_premium_categoria(num_tel, mp_p, sp_p, dp_p, "Teléfono"))
+        st.write(texto_telefono(num_tel))
     else:
         st.info("Si deseas, agrega un teléfono para activar esta sección.")
 
     if num_dir:
         st.markdown(f"### Dirección / Apto — Número {num_dir}")
-        st.write(parrafo_premium_categoria(num_dir, mp_p, sp_p, dp_p, "Hogar / Dirección"))
+        st.write(texto_hogar(num_dir))
     else:
         st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
 
