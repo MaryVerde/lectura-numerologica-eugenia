@@ -1523,8 +1523,10 @@ if clave_ingresada:
     cA, cB = st.columns(2)
     with cA:
         telefono = st.text_input("Teléfono (opcional)", value="", placeholder="Ej: +58 412 000 0000")
+        key="telefono_premiun"
     with cB:
         direccion_apto = st.text_input("Dirección / Apto (opcional)", value="", placeholder="Ej: Torre A, Apto 12B")
+        key="dirreccion_apto_premiun"
 
     num_tel = numero_apto(telefono) if telefono.strip() else 0
     num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
