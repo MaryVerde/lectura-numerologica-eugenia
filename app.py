@@ -1456,14 +1456,17 @@ if ADMIN_PIN:
             else:
                 st.error("PIN incorrecto")
 
-# =====================================================
-# VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
-# =====================================================
+
+# =========================================================
+# 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
+# =========================================================
+
 st.markdown("---")
-st.markdown("🔒 *Versión Completa (Premium + PDF personalizado)*")
+st.markdown("## 🔐 Versión Completa (Premium + PDF personalizado)")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
 
 colv1, colv2 = st.columns(2)
+
 with colv1:
     nombre_compra = st.text_input(
         "Nombre (exactamente como en tu compra)",
@@ -1471,6 +1474,7 @@ with colv1:
         max_chars=40,
         placeholder="Ej: Eugenia Mystikos"
     )
+
 with colv2:
     fecha_compra = st.date_input(
         "Fecha de nacimiento (como en tu compra)",
@@ -1485,7 +1489,15 @@ clave_ingresada = st.text_input(
     type="password"
 ).strip().upper()
 
-if clave_ingresada:
+# 👉 BOTÓN CLAVE (ESTO ES LO QUE FALTABA)
+confirmar_datos = st.button("🔓 Confirmar datos y desbloquear")
+
+# =========================================================
+# VALIDACIÓN (SOLO SE EJECUTA AL PRESIONAR EL BOTÓN)
+# =========================================================
+
+if confirmar_datos:
+
     if not nombre_compra.strip():
         st.warning("Escribe tu nombre tal como aparece en tu compra.")
         st.stop()
@@ -1494,12 +1506,17 @@ if clave_ingresada:
         st.warning("Debes indicar la fecha de nacimiento usada en tu compra.")
         st.stop()
 
+    if not clave_ingresada:
+        st.warning("Debes introducir tu clave personal.")
+        st.stop()
+
     clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
 
     if clave_ingresada != clave_esperada:
         st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
         st.stop()
 
+    # ✅ DESBLOQUEO
     st.success("Versión completa desbloqueada ✅")
 
     # ✅ Forzar datos validados
