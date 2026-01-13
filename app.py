@@ -1298,6 +1298,17 @@ La numerología, cuando se usa con consciencia, no limita: ordena, revela y enfo
 Tómala como una brújula, no como un destino.
 """)
 
+hoy = date.today()
+dia_del_ano = hoy.timetuple().tm_yday  # 1 a 365 (366 en bisiesto)
+
+mensaje_365 = ENERGIA_DIA_365 .get(
+                dia_del_ano,
+                "Hoy es un día para observar, integrar y no forzar."
+            )
+
+st.markdown("### 🌞 Mensaje universal del día")
+st.write(mensaje_365)
+
 # =====================================================
 # INPUTS
 # =====================================================
@@ -1379,16 +1390,7 @@ if calcular:
         st.write(f"Mi energía de hoy — Número {dp}")
         st.write(lectura_resumida(dp))
 
-        hoy = date.today()
-        dia_del_ano = hoy.timetuple().tm_yday  # 1 a 365 (366 en bisiesto)
-
-        mensaje_365 = ENERGIA_DIA_365 .get(
-            dia_del_ano,
-            "Hoy es un día para observar, integrar y no forzar."
-        )
-
-        st.markdown("### 🌞 Energía universal del día (365)")
-        st.write(mensaje_365)
+       
 
         if activar_compat_express:
             comp_ex = compatibilidad_numero(fecha_nac, fecha_pareja_express)
