@@ -63,6 +63,10 @@ A# ==============================================
 # CONFIGURACIÓN GENERAL
 # ==============================================
 
+# ==============================================
+# CONFIGURACIÓN GENERAL
+# ==============================================
+
 APP_TITLE = "🔮 Lectura Numerológica"
 BRAND = "Eugenia.Mystikos"
 
@@ -76,7 +80,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 h1 {
-    color: #b11226; /* rojo elegante */
+    color: #b11226;
     font-weight: 700;
 }
 .brand {
@@ -91,7 +95,10 @@ h1 {
 """, unsafe_allow_html=True)
 
 # --- TÍTULO ---
-st.markdown(f"<h1>{APP_TITLE} · <span class='brand'>{BRAND}</span></h1>", unsafe_allow_html=True)
+st.markdown(
+    "<h1>🔮 Lectura Numerológica · <span class='brand'>Eugenia.Mystikos</span></h1>",
+    unsafe_allow_html=True
+)
 
 st.markdown(
     "<div class='subtitle'>"
@@ -1701,3 +1708,4 @@ if st.session_state.premium_activo:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
