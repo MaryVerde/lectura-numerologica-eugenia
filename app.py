@@ -1522,7 +1522,8 @@ if confirmar_datos:
     # ✅ DESBLOQUEO
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅") 
-
+    
+if st.session_state.premium_activo:
     # ✅ Forzar datos validados
     nombre_validado = nombre_compra.strip()
     fecha_validada = fecha_compra
