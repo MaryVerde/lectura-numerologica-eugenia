@@ -11,6 +11,9 @@ import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+if "premium_activo" not in st.session_state:
+    st.session_state.premium_activo = False
+
 # =====================================================
 # SECRETOS (STREAMLIT CLOUD + LOCAL)
 # =====================================================
@@ -1539,6 +1542,7 @@ if confirmar_datos:
     num_nombre_p = numero_nombre(nombre_validado) if nombre_validado else 0
 
     # Inputs extra premium (teléfono / dirección)
+if st.session_state.premium_activo:
     st.markdown("### 📌 Datos opcionales Premium")
     cA, cB = st.columns(2)
     with cA:
