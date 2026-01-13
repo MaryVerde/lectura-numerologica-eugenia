@@ -1399,7 +1399,7 @@ if calcular:
 
 
         # ✅ AQUÍ VAN LOS 4 BLOQUES CORTOS GRATIS (lo que me pediste)
-        st.markdown("#### 💡 Pronóstico clave (gratis)")
+        st.markdown("#### 💡 Pronóstico clave")
         st.write(frase_categoria(FRASES_AMOR, ap))
         st.write(frase_categoria(FRASES_DINERO, ap))
         st.write(frase_categoria(FRASES_EMOCIONAL, ap))
