@@ -56,13 +56,6 @@ def incrementar_contador():
         pass
     return total
 
-# =====================================================
-# CONFIGURACIÓN GENERAL
-# =====================================================
-A# ==============================================
-# CONFIGURACIÓN GENERAL
-# ==============================================
-
 # ==============================================
 # CONFIGURACIÓN GENERAL
 # ==============================================
@@ -1708,4 +1701,5 @@ if st.session_state.premium_activo:
     )
 
 st.caption(f"{BRAND} · Lectura Numerológica")
+
 
