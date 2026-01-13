@@ -1517,7 +1517,8 @@ if confirmar_datos:
         st.stop()
 
     # ✅ DESBLOQUEO
-    st.success("Versión completa desbloqueada ✅")
+    st.session_state.premium_activo = True
+    st.success("Versión completa desbloqueada ✅") 
 
     # ✅ Forzar datos validados
     nombre_validado = nombre_compra.strip()
