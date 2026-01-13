@@ -59,6 +59,10 @@ def incrementar_contador():
 # =====================================================
 # CONFIGURACIÓN GENERAL
 # =====================================================
+A# ==============================================
+# CONFIGURACIÓN GENERAL
+# ==============================================
+
 APP_TITLE = "🔮 Lectura Numerológica"
 BRAND = "Eugenia.Mystikos"
 
@@ -68,12 +72,33 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title(f"{APP_TITLE} · {BRAND}")
-st.markdown(
-    f"{BRAND}  \n"
-    "Versión Resumida · Interpretación completa en versión completa (PDF personalizado)"
-)
+# --- ESTILO VISUAL (marca en rojo) ---
+st.markdown("""
+<style>
+h1 {
+    color: #b11226; /* rojo elegante */
+    font-weight: 700;
+}
+.brand {
+    color: #b11226;
+    font-weight: 600;
+}
+.subtitle {
+    color: #444444;
+    font-size: 0.95rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
+# --- TÍTULO ---
+st.markdown(f"<h1>{APP_TITLE} · <span class='brand'>{BRAND}</span></h1>", unsafe_allow_html=True)
+
+st.markdown(
+    "<div class='subtitle'>"
+    "Versión Resumida · Interpretación completa disponible en versión Premium (PDF personalizado)"
+    "</div>",
+    unsafe_allow_html=True
+)
 # =====================================================
 # UTILIDADES NUMEROLÓGICAS
 # =====================================================
@@ -1522,7 +1547,7 @@ if confirmar_datos:
     # ✅ DESBLOQUEO
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅") 
-    
+
 if st.session_state.premium_activo:
     # ✅ Forzar datos validados
     nombre_validado = nombre_compra.strip()
