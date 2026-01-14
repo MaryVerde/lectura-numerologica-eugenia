@@ -1486,7 +1486,6 @@ if ADMIN_PIN:
                 st.error("PIN incorrecto")
 
 
-
 # =========================================================
 # 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =========================================================
@@ -1553,14 +1552,16 @@ if confirmar_datos:
     #####################################################
 from openpyxl import load_workbook
 
-EXCEL_PATH = r"C:\Users\Usuario\Downloads\Numerologia_EugeniaMystikos\Numerologia_Eugenia.xlsx"
+EXCEL_PATH = "Numerologia_Eugenia.xlsx"
+
+
 def leer_excel_premium():
     wb = load_workbook(EXCEL_PATH, data_only=True)
     data = {}
 
     hojas_analisis = [
         "Resultado v2.0",
-        "Vision Global (FN)",
+        "Visión Global (FN)",
         "Camino de Vida (Nombre)",
         "Clave Personal",
         "Diamante Principal (FN)",
@@ -1568,21 +1569,16 @@ def leer_excel_premium():
     ]
 
     for hoja in hojas_analisis:
+        if hoja not in wb.sheetnames:
+            continue
+
         ws = wb[hoja]
         filas = []
         for row in ws.iter_rows(values_only=True):
             if any(row):
                 filas.append(row)
-        data[hoja] = filas
 
-    # Estudio completo para PDF
-    if "Estudio completo" in wb.sheetnames:
-        ws_full = wb["Estudio completo"]
-        texto_completo = []
-        for row in ws_full.iter_rows(values_only=True):
-            if row and row[0]:
-                texto_completo.append(str(row[0]))
-        data["Estudio completo"] = "\n".join(texto_completo)
+        data[hoja] = filas
 
     return data
 
@@ -1692,7 +1688,6 @@ st.download_button(
     file_name=f"Analisis_Numerologico_Premium_{normalizar_clave_nombre(nombre)}.pdf",
     mime="application/pdf"
 )
-
 
 
 
