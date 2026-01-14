@@ -1485,6 +1485,22 @@ if ADMIN_PIN:
             else:
                 st.error("PIN incorrecto")
 
+# =====================================================
+# PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
+# =====================================================
+if ADMIN_PIN:
+    with st.expander("🔐 Eugenia Mystikos (Admin)", expanded=False):
+        pin_ingresado = st.text_input("PIN de administración", type="password")
+        if pin_ingresado:
+            if pin_ingresado == ADMIN_PIN:
+                st.success("Acceso concedido ✅")
+                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
+                if nombre.strip():
+                    st.caption("Clave del cliente (según nombre+fecha actuales):")
+                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
+            else:
+                st.error("PIN incorrecto")
+
 
 # =========================================================
 # 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
@@ -1549,159 +1565,154 @@ if confirmar_datos:
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅") 
 
-if st.session_state.premium_activo:
-    # ✅ Forzar datos validados
-    nombre_validado = nombre_compra.strip()
-    fecha_validada = fecha_compra
+    #####################################################
+from openpyxl import load_workbook
 
-    # Recalcular TODO
-    es_p = esencia(fecha_validada)
-    mis_p = sendero_vida(fecha_validada)
-    vp_p = vida_pasada(fecha_validada)
+EXCEL_PATH = r"C:\Users\Usuario\Downloads\Numerologia_EugeniaMystikos\Numerologia_Eugenia.xlsx"
+def leer_excel_premium():
+    wb = load_workbook(EXCEL_PATH, data_only=True)
+    data = {}
 
-    ap_p = ano_personal(fecha_validada, hoy.year)
-    mp_p = mes_personal(ap_p, hoy.month)
-    sp_p = semana_personal(mp_p, hoy.isocalendar()[1])
-    dp_p = dia_personal(mp_p, hoy.day)
-
-    arc_p = arcano_semanal()
-    pin_p = pinaculo_piramide(fecha_validada)
-    num_nombre_p = numero_nombre(nombre_validado) if nombre_validado else 0
-
-    # Inputs extra premium (teléfono / dirección)
-if st.session_state.premium_activo:
-    st.markdown("### 📌 Datos opcionales Premium")
-    cA, cB = st.columns(2)
-    with cA:
-        telefono = st.text_input("Teléfono (opcional)", value="", placeholder="Ej: +58 412 000 0000")
-        key="telefono_premiun"
-    with cB:
-        direccion_apto = st.text_input("Dirección / Apto (opcional)", value="", placeholder="Ej: Torre A, Apto 12B")
-        key="dirreccion_apto_premiun"
-
-    num_tel = numero_apto(telefono) if telefono.strip() else 0
-    num_dir = numero_apto(direccion_apto) if direccion_apto.strip() else 0
-
-    st.markdown("### 💞 Compatibilidad (Premium)")
-    activar_compat_premium = st.checkbox("Activar compatibilidad profunda", value=False, key="compat_premium")
-
-    fecha_pareja_premium = st.date_input(
-    "Fecha de nacimiento de la pareja (Premium)",
-    min_value=date(1936, 1, 1),
-    max_value=date(2036, 12, 31),
-    value=date(2000, 1, 1),
-    disabled=not activar_compat_premium,
-    key="fecha_pareja_premium"
-)
-
-    # =====================================================
-    # UI – VERSIÓN COMPLETA
-    # =====================================================
-    st.markdown("## 💎 Lectura Completa")
-
-    st.markdown("### 1) Esencia")
-    st.write(f"Número {es_p}")
-    st.write(parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, "Esencia"))
-
-    st.markdown("### 2) Misión / Sendero de vida")
-    st.write(f"Número {mis_p}")
-    st.write(parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, "Misión"))
-
-    st.markdown("### 3) Vida pasada")
-    st.write(f"Número {vp_p}")
-    st.write(parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, "Vida pasada"))
-
-    st.markdown("### 4) Año personal")
-    st.write(f"Número {ap_p}")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Año personal"))
-
-    st.markdown("### 5) Mes personal")
-    st.write(f"Número {mp_p}")
-    st.write(parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, "Mes personal"))
-
-    st.markdown("### 6) Semana personal")
-    st.write(f"Número {sp_p}")
-    st.write(parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, "Semana personal"))
-
-    st.markdown("### 7) Día personal")
-    st.write(f"Número {dp_p}")
-    st.write(parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, "Día personal"))
-
-    # ✅ AQUÍ VA TU BLOQUE PREMIUM (amor/dinero/emocional/protección)
-    st.markdown("## ✨ Premium: Amor, Dinero, Emoción y Protección")
-    st.markdown("### 💗 Amor y vínculos")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos"))
-
-    st.markdown("### 💰 Dinero y prosperidad")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad"))
-
-    st.markdown("### 🌊 Energía emocional")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional"))
-
-    st.markdown("### 🛡️ Protección energética")
-    st.write(parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética"))
-
-    # ✅ Teléfono y dirección (como tú pediste, vuelve)
-    st.markdown("## 📞🏠 Vibraciones de Teléfono y Hogar")
-    if num_tel:
-        st.markdown(f"### Teléfono — Número {num_tel}")
-        st.write(texto_telefono(num_tel))
-    else:
-        st.info("Si deseas, agrega un teléfono para activar esta sección.")
-
-    if num_dir:
-        st.markdown(f"### Dirección / Apto — Número {num_dir}")
-        st.write(texto_hogar(num_dir))
-    else:
-        st.info("Si deseas, agrega tu dirección o número de apto para activar esta sección.")
-
-    st.markdown("### 8) Arcano mayor de la semana")
-    st.write(f"Arcano {arc_p}")
-    st.write(arcano_micro(arc_p))
-
-    st.markdown("### 9) Pináculo (pirámide completa)")
-    st.write(f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}")
-    st.write(pinaculo_micro(pin_p))
-
-    if activar_compat_premium:
-        comp_pr = compatibilidad_numero(fecha_validada, fecha_pareja_premium)
-        st.markdown(f"### 💞 Compatibilidad Profunda · Número {comp_pr}")
-        st.write(compatibilidad_profunda_texto(comp_pr))
-
-
-    # PDF COMPLETO
-    secciones_completa = [
-        ("Datos", f"Nombre: {nombre_validado or '—'}\nFecha de nacimiento: {fecha_validada}\nGenerado: {hoy}"),
-        ("Esencia", f"Número {es_p}\n\n{parrafo_premium_categoria(es_p, mp_p, sp_p, dp_p, 'Esencia')}"),
-        ("Misión / Sendero", f"Número {mis_p}\n\n{parrafo_premium_categoria(mis_p, mp_p, sp_p, dp_p, 'Misión')}"),
-        ("Vida pasada", f"Número {vp_p}\n\n{parrafo_premium_categoria(vp_p, mp_p, sp_p, dp_p, 'Vida pasada')}"),
-        ("Año personal", f"Número {ap_p}\n\n{parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, 'Año personal')}"),
-        ("Mes personal", f"Número {mp_p}\n\n{parrafo_premium_categoria(mp_p, mp_p, sp_p, dp_p, 'Mes personal')}"),
-        ("Semana personal", f"Número {sp_p}\n\n{parrafo_premium_categoria(sp_p, mp_p, sp_p, dp_p, 'Semana personal')}"),
-        ("Día personal", f"Número {dp_p}\n\n{parrafo_premium_categoria(dp_p, mp_p, sp_p, dp_p, 'Día personal')}"),
-        ("Premium: Amor y vínculos", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Amor y vínculos")),
-        ("Premium: Dinero y prosperidad", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Dinero y prosperidad")),
-        ("Premium: Energía emocional", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Energía emocional")),
-        ("Premium: Protección energética", parrafo_premium_categoria(ap_p, mp_p, sp_p, dp_p, "Protección energética")),
-        ("Teléfono", f"Número {num_tel if num_tel else '—'}\n\n{parrafo_premium_categoria(num_tel, mp_p, sp_p, dp_p, 'Teléfono') if num_tel else 'No se ingresó teléfono.'}"),
-        ("Dirección / Apto", f"Número {num_dir if num_dir else '—'}\n\n{parrafo_premium_categoria(num_dir, mp_p, sp_p, dp_p, 'Hogar / Dirección') if num_dir else 'No se ingresó dirección/apto.'}"),
-        ("Arcano semanal", f"Arcano {arc_p}\n\n{arcano_micro(arc_p)}"),
-        ("Pináculo (pirámide completa)", f"Base: {pin_p['base']} | Medio: {pin_p['medio']} | Cima: {pin_p['cima']}\n\n{pinaculo_micro(pin_p)}"),
+    hojas_analisis = [
+        "Resultado v2.0",
+        "Vision Global (FN)",
+        "Camino de Vida (Nombre)",
+        "Clave Personal",
+        "Diamante Principal (FN)",
+        "Ciclo de Vida (FN)"
     ]
 
-    pdf_completa = build_pdf_bytes(
-        f"{APP_TITLE} · Versión Completa · {BRAND}",
-        secciones_completa
+    for hoja in hojas_analisis:
+        ws = wb[hoja]
+        filas = []
+        for row in ws.iter_rows(values_only=True):
+            if any(row):
+                filas.append(row)
+        data[hoja] = filas
+
+    # Estudio completo para PDF
+    if "Estudio completo" in wb.sheetnames:
+        ws_full = wb["Estudio completo"]
+        texto_completo = []
+        for row in ws_full.iter_rows(values_only=True):
+            if row and row[0]:
+                texto_completo.append(str(row[0]))
+        data["Estudio completo"] = "\n".join(texto_completo)
+
+    return data
+
+st.markdown("### 🔐 Análisis Premium (desde Excel)")
+
+data_premium = leer_excel_premium()
+
+for seccion, filas in data_premium.items():
+    st.subheader(seccion)
+    for fila in filas:
+        st.write(fila)
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.colors import HexColor
+from io import BytesIO
+
+
+
+def build_pdf_premium_desde_excel(nombre_cliente, data_excel):
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=LETTER,
+        rightMargin=50,
+        leftMargin=50,
+        topMargin=50,
+        bottomMargin=50
     )
 
-    st.download_button(
-        "⬇️ Descargar PDF (Versión Completa)",
-        data=pdf_completa,
-        file_name=f"Lectura_Numerologica_Completa_{BRAND}.pdf",
-        mime="application/pdf",
-    )
+    styles = getSampleStyleSheet()
 
-st.caption(f"{BRAND} · Lectura Numerológica")
+    styles.add(ParagraphStyle(
+        name="Titulo",
+        fontSize=22,
+        leading=26,
+        textColor=HexColor("#7A1E3A"),  # rojo místico elegante
+        spaceAfter=20
+    ))
+
+    styles.add(ParagraphStyle(
+        name="Subtitulo",
+        fontSize=15,
+        leading=18,
+        textColor=HexColor("#3A3A3A"),
+        spaceBefore=18,
+        spaceAfter=10
+    ))
+
+    styles.add(ParagraphStyle(
+        name="Texto",
+        fontSize=11,
+        leading=16,
+        spaceAfter=8
+    ))
+
+    elementos = []
+
+    # PORTADA
+    elementos.append(Paragraph("Lectura Numerológica Premium", styles["Titulo"]))
+    elementos.append(Paragraph(f"Para: <b>{nombre_cliente}</b>", styles["Texto"]))
+    elementos.append(Spacer(1, 20))
+    elementos.append(Paragraph("Eugenia Mística", styles["Texto"]))
+    elementos.append(PageBreak())
+
+    # CONTENIDO POR SECCIONES
+    for seccion, filas in data_excel.items():
+        if seccion == "Estudio completo":
+            continue
+
+        elementos.append(Paragraph(seccion, styles["Subtitulo"]))
+
+        for fila in filas:
+            if isinstance(fila, (list, tuple)):
+                texto = " | ".join(str(x) for x in fila if x is not None)
+            else:
+                texto = str(fila)
+
+            elementos.append(Paragraph(texto, styles["Texto"]))
+
+        elementos.append(Spacer(1, 14))
+
+    # BLOQUE FINAL PROFUNDO
+    if "Estudio completo" in data_excel:
+        elementos.append(PageBreak())
+        elementos.append(Paragraph("Estudio Numerológico Profundo", styles["Titulo"]))
+
+        texto_largo = data_excel["Estudio completo"].split("\n")
+        for linea in texto_largo:
+            elementos.append(Paragraph(linea, styles["Texto"]))
+
+    doc.build(elementos)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+pdf_bytes = build_pdf_premium_desde_excel(
+    nombre_cliente=nombre,
+    data_excel=data_premium
+)
+
+st.download_button(
+    "📄 Descargar Análisis Premium (PDF)",
+    data=pdf_bytes,
+    file_name=f"Analisis_Numerologico_Premium_{normalizar_clave_nombre(nombre)}.pdf",
+    mime="application/pdf"
+)
+
+
+
+
+
+
 
 
 
