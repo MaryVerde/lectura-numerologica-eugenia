@@ -1485,21 +1485,6 @@ if ADMIN_PIN:
             else:
                 st.error("PIN incorrecto")
 
-# =====================================================
-# PANEL ADMIN (OCULTO POR PIN) - SOLO AQUÍ SE VE CONTADOR Y GENERADOR
-# =====================================================
-if ADMIN_PIN:
-    with st.expander("🔐 Eugenia Mystikos (Admin)", expanded=False):
-        pin_ingresado = st.text_input("PIN de administración", type="password")
-        if pin_ingresado:
-            if pin_ingresado == ADMIN_PIN:
-                st.success("Acceso concedido ✅")
-                st.info(f"📊 Uso interno · Total activaciones resumida: {leer_contador()}")
-                if nombre.strip():
-                    st.caption("Clave del cliente (según nombre+fecha actuales):")
-                    st.code(generar_clave_unica(nombre, fecha_nac), language="text")
-            else:
-                st.error("PIN incorrecto")
 
 
 # =========================================================
@@ -1707,6 +1692,7 @@ st.download_button(
     file_name=f"Analisis_Numerologico_Premium_{normalizar_clave_nombre(nombre)}.pdf",
     mime="application/pdf"
 )
+
 
 
 
