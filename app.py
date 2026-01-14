@@ -1552,7 +1552,8 @@ if confirmar_datos:
     #####################################################
 from openpyxl import load_workbook
 
-EXCEL_PATH = "Numerologia_Eugenia.xlsx"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
 
 
 def leer_excel_premium():
@@ -1582,14 +1583,18 @@ def leer_excel_premium():
 
     return data
 
-st.markdown("### 🔐 Análisis Premium (desde Excel)")
+if st.session_state.get("premium_activo"):
 
-data_premium = leer_excel_premium()
+    st.markdown("### 🔐 Análisis Premium (desde Excel)")
 
-for seccion, filas in data_premium.items():
-    st.subheader(seccion)
-    for fila in filas:
-        st.write(fila)
+    data_premium = leer_excel_premium()
+
+    for seccion, filas in data_premium.items():
+        st.subheader(seccion)
+        for fila in filas:
+          texto = " | ".join(str(x) for x in fila if x not in (None, "", "None"))
+          if texto.strip():
+            st.write(texto)
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -1677,18 +1682,18 @@ def build_pdf_premium_desde_excel(nombre_cliente, data_excel):
     return buffer.getvalue()
 
 
-pdf_bytes = build_pdf_premium_desde_excel(
-    nombre_cliente=nombre,
-    data_excel=data_premium
-)
+if st.session_state.get("premium_activo"):
+    pdf_bytes = build_pdf_premium_desde_excel(
+        nombre_cliente=nombre_compra,
+        data_excel=data_premium
+    )
 
-st.download_button(
-    "📄 Descargar Análisis Premium (PDF)",
-    data=pdf_bytes,
-    file_name=f"Analisis_Numerologico_Premium_{normalizar_clave_nombre(nombre)}.pdf",
-    mime="application/pdf"
-)
-
+    st.download_button(
+        "📄 Descargar Análisis Premium (PDF)",
+        data=pdf_bytes,
+        file_name=f"Analisis_Numerologico_Premium_{normalizar_clave_nombre(nombre_compra)}.pdf",
+        mime="application/pdf"
+    )
 
 
 
