@@ -21,7 +21,7 @@ from reportlab.lib.colors import HexColor
 # -----------------------------
 # 📌 RUTA DEL EXCEL (en repo)
 # -----------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(_file_))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")  # OJO: debe llamarse EXACTO así en GitHub
 
 
@@ -276,3 +276,4 @@ if st.session_state.get("premium_activo"):
         mime="application/pdf",
         key="dl_pdf_premium"
     )
+
