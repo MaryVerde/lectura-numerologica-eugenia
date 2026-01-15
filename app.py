@@ -1490,9 +1490,6 @@ if ADMIN_PIN:
 # 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =========================================================
 
-if "premium_activo" not in st.session_state:
-    st.session_state.premium_activo = False
-
 st.markdown("---")
 st.markdown("## 🔐 Versión Completa (Premium + PDF personalizado)")
 st.write("Desbloquea tu lectura completa con tu clave personal.")
@@ -1503,8 +1500,7 @@ with colv1:
     nombre_compra = st.text_input(
         "Nombre (exactamente como en tu compra)",
         key="nombre_compra",
-        max_chars=40,
-        placeholder="Ej: Eugenia Mystikos"
+        max_chars=40
     )
 
 with colv2:
@@ -1512,8 +1508,7 @@ with colv2:
         "Fecha de nacimiento (como en tu compra)",
         key="fecha_compra",
         min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31),
-        value=date(1990, 1, 1),
+        max_value=date(2040, 12, 31)
     )
 
 clave_ingresada = st.text_input(
@@ -1524,7 +1519,7 @@ clave_ingresada = st.text_input(
 confirmar_datos = st.button("🔓 Confirmar datos y desbloquear")
 
 # =========================================================
-# VALIDACIÓN DE CLAVE (NO SE MODIFICA)
+# VALIDACIÓN
 # =========================================================
 
 if confirmar_datos:
@@ -1544,17 +1539,18 @@ if confirmar_datos:
     clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
 
     if clave_ingresada != clave_esperada:
-        st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
+        st.error("Clave inválida. Verifica nombre y fecha.")
         st.stop()
 
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅")
+    st.rerun()
 
-## =========================================================
+# =========================================================
 # 📘 MOTOR PREMIUM (EXCEL + PDF) — OCULTO
 # =========================================================
 
-if st.session_state.premium_activo:
+if st.session_state.get("premium_activo"):
 
     from openpyxl import load_workbook
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
@@ -1568,7 +1564,7 @@ if st.session_state.premium_activo:
     EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
 
     # =====================================================
-    # 🔮 LECTURA COMPLETA DEL EXCEL (MOTOR INTERNO)
+    # 🔮 LECTURA COMPLETA DEL EXCEL (SE CALCULA TODO)
     # =====================================================
     def leer_excel_completo():
         wb = load_workbook(EXCEL_PATH, data_only=True)
@@ -1612,7 +1608,7 @@ if st.session_state.premium_activo:
             fontSize=14,
             leading=18,
             alignment=1,
-            textColor=HexColor("#9C7A3F")  # dorado
+            textColor=HexColor("#9C7A3F")  # dorado elegante
         ))
 
         styles.add(ParagraphStyle(
@@ -1631,7 +1627,7 @@ if st.session_state.premium_activo:
         elementos.append(Spacer(1, 40))
         elementos.append(PageBreak())
 
-        # 🔮 CONTENIDO FINAL (ÚNICO)
+        # 🔮 CONTENIDO FINAL (ÚNICO RESULTADO)
         for fila in filas_estudio:
             texto = " ".join(str(x) for x in fila if x not in (None, "", "None"))
             if texto.strip():
@@ -1640,3 +1636,22 @@ if st.session_state.premium_activo:
         doc.build(elementos)
         buffer.seek(0)
         return buffer.getvalue()
+
+    # =====================================================
+    # 🚀 EJECUCIÓN FINAL
+    # =====================================================
+    data_excel = leer_excel_completo()
+    filas_estudio = data_excel.get("estudio completo", [])
+
+    if not filas_estudio:
+        st.error("No se encontró la hoja 'Estudio completo' en el Excel.")
+        st.stop()
+
+    pdf_bytes = build_pdf_estudio_completo(nombre_compra, filas_estudio)
+
+    st.download_button(
+        "📄 Descargar tu Estudio Numerológico Completo (PDF)",
+        data=pdf_bytes,
+        file_name=f"Estudio_Numerologico_{nombre_compra}.pdf",
+        mime="application/pdf"
+    )
