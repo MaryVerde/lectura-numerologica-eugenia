@@ -1877,6 +1877,7 @@ if st.session_state.get("premium_activo"):
         st.download_button(
             "📄 Descargar tu Estudio Numerológico Completo (PDF)",
             data=pdf_bytes,
-            file_name=f"Estudio_Numerologico_{norm(nombre_compra).replace(' ','')}.pdf",
+            file_name=f"Estudio_Numerologico_{_norm(nombre_compra).replace(' ','')}.pdf",
             mime="application/pdf"
         )
+
