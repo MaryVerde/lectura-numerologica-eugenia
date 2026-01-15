@@ -1550,7 +1550,7 @@ if confirmar_datos:
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅")
 
-# =========================================================
+## =========================================================
 # 📘 MOTOR PREMIUM (EXCEL + PDF) — OCULTO
 # =========================================================
 
@@ -1567,6 +1567,9 @@ if st.session_state.premium_activo:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
 
+    # =====================================================
+    # 🔮 LECTURA COMPLETA DEL EXCEL (MOTOR INTERNO)
+    # =====================================================
     def leer_excel_completo():
         wb = load_workbook(EXCEL_PATH, data_only=True)
         data = {}
@@ -1576,10 +1579,13 @@ if st.session_state.premium_activo:
             for row in ws.iter_rows(values_only=True):
                 if any(cell not in (None, "", "None") for cell in row):
                     filas.append(row)
-            data[hoja] = filas
+            data[hoja.strip().lower()] = filas
         return data
 
-    def build_pdf_premium_desde_excel(nombre_cliente, data_excel):
+    # =====================================================
+    # 📄 PDF — SOLO ESTUDIO COMPLETO
+    # =====================================================
+    def build_pdf_estudio_completo(nombre_cliente, filas_estudio):
         buffer = BytesIO()
 
         doc = SimpleDocTemplate(
@@ -1598,7 +1604,7 @@ if st.session_state.premium_activo:
             fontSize=26,
             leading=30,
             alignment=1,
-            textColor=HexColor("#7A1E3A")
+            textColor=HexColor("#7A1E3A")  # rojo místico
         ))
 
         styles.add(ParagraphStyle(
@@ -1606,41 +1612,31 @@ if st.session_state.premium_activo:
             fontSize=14,
             leading=18,
             alignment=1,
-            textColor=HexColor("#9C7A3F")
+            textColor=HexColor("#9C7A3F")  # dorado
         ))
 
         styles.add(ParagraphStyle(
             name="Texto",
             fontSize=11,
             leading=16,
-            spaceAfter=8
+            spaceAfter=10
         ))
 
         elementos = []
+
+        # 🌙 PORTADA
         elementos.append(Spacer(1, 80))
-        elementos.append(Paragraph("Lectura Numerológica Premium", styles["Titulo"]))
+        elementos.append(Paragraph("Estudio Numerológico Completo", styles["Titulo"]))
         elementos.append(Paragraph(f"<b>{nombre_cliente}</b>", styles["Subtitulo"]))
+        elementos.append(Spacer(1, 40))
         elementos.append(PageBreak())
 
-        for seccion, filas in data_excel.items():
-            elementos.append(Paragraph(seccion, styles["Subtitulo"]))
-            for fila in filas:
-                texto = " · ".join(str(x) for x in fila if x not in (None, "", "None"))
-                if texto.strip():
-                    elementos.append(Paragraph(texto, styles["Texto"]))
-            elementos.append(Spacer(1, 12))
+        # 🔮 CONTENIDO FINAL (ÚNICO)
+        for fila in filas_estudio:
+            texto = " ".join(str(x) for x in fila if x not in (None, "", "None"))
+            if texto.strip():
+                elementos.append(Paragraph(texto, styles["Texto"]))
 
         doc.build(elementos)
         buffer.seek(0)
         return buffer.getvalue()
-
-    data_excel = leer_excel_completo()
-    pdf_bytes = build_pdf_premium_desde_excel(nombre_compra, data_excel)
-
-    st.download_button(
-        "📄 Descargar tu Informe Premium",
-        data=pdf_bytes,
-        file_name="Lectura_Numerologica_Premium.pdf",
-        mime="application/pdf"
-    )
-
