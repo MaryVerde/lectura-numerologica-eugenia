@@ -1564,7 +1564,7 @@ if st.session_state.premium_activo:
     from io import BytesIO
     import os
 
-    BASE_DIR = os.path.dirname(os.path.abspath(_file_))
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
 
     def leer_excel_completo():
@@ -1643,3 +1643,4 @@ if st.session_state.premium_activo:
         file_name="Lectura_Numerologica_Premium.pdf",
         mime="application/pdf"
     )
+
