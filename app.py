@@ -1484,18 +1484,17 @@ if ADMIN_PIN:
                     st.code(generar_clave_unica(nombre, fecha_nac), language="text")
             else:
                 st.error("PIN incorrecto")
-
 # =========================================================
 # 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
 # =========================================================
 
 import os
 import re
-import unicodedata
-import tempfile
 import shutil
 import subprocess
+import tempfile
 from datetime import date
+from io import BytesIO
 
 import streamlit as st
 from openpyxl import load_workbook
@@ -1503,12 +1502,248 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.colors import HexColor
-from io import BytesIO
 
 
-# --- Asegura estado ---
-if "premium_activo" not in st.session_state:
-    st.session_state.premium_activo = False
+# ---------- Helpers ----------
+def norm_txt(s: str) -> str:
+    s = (s or "").strip()
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+def split_nombre_completo(full: str):
+    """
+    Heurística latina:
+    - Apellido1 = penúltima palabra
+    - Apellido2 = última palabra
+    - Nombres = lo demás (Nombre1 = primero, Nombre2 = resto)
+    Si hay 2 o 3 palabras, se ajusta.
+    """
+    full = norm_txt(full)
+    parts = [p for p in full.split(" ") if p]
+    nombre1 = nombre2 = apellido1 = apellido2 = ""
+
+    if len(parts) == 0:
+        return nombre1, nombre2, apellido1, apellido2
+
+    if len(parts) == 1:
+        nombre1 = parts[0]
+        return nombre1, nombre2, apellido1, apellido2
+
+    if len(parts) == 2:
+        nombre1, apellido1 = parts
+        return nombre1, nombre2, apellido1, apellido2
+
+    if len(parts) == 3:
+        nombre1 = parts[0]
+        apellido1 = parts[1]
+        apellido2 = parts[2]
+        return nombre1, nombre2, apellido1, apellido2
+
+    # 4 o más
+    apellido1 = parts[-2]
+    apellido2 = parts[-1]
+    nombres = parts[:-2]
+    nombre1 = nombres[0] if nombres else ""
+    nombre2 = " ".join(nombres[1:]) if len(nombres) > 1 else ""
+    return nombre1, nombre2, apellido1, apellido2
+
+
+def fill_letters_row(ws, row_idx: int, start_col: int, slots: int, text: str):
+    """
+    Llena los cuadritos de letras (sin espacios).
+    Si el texto es más largo que slots, se recorta.
+    Si es más corto, se rellena con vacío.
+    """
+    txt = re.sub(r"\s+", "", norm_txt(text)).upper()
+    txt = txt[:slots]
+    for i in range(slots):
+        ch = txt[i] if i < len(txt) else ""
+        ws.cell(row=row_idx, column=start_col + i).value = ch
+
+
+def write_inputs_to_tarot_xlsx(src_xlsx: str, out_xlsx: str,
+                               nombre1: str, nombre2: str, apellido1: str, apellido2: str,
+                               fecha_nac: date):
+    """
+    Escribe en 'Cartas del Tarot (FN)' exactamente en los cuadros:
+    - Nombre1 -> fila 4, cols D..O (12)
+    - Nombre2 -> fila 5, cols D..O (12)
+    - Apellido1 -> fila 6, cols D..O (12)
+    - Apellido2 -> fila 7, cols D..O (12)
+    - Día -> fila 10, cols C..D (2)
+    - Mes -> fila 10, cols F..G (2)
+    - Año -> fila 10, cols I..L (4)
+    """
+    wb = load_workbook(src_xlsx, data_only=False)
+    if "Cartas del Tarot (FN)" not in wb.sheetnames:
+        raise ValueError("No existe la hoja 'Cartas del Tarot (FN)' en el Excel.")
+
+    ws = wb["Cartas del Tarot (FN)"]
+
+    # Letras (12 slots cada fila)
+    # D=4
+    START_COL = 4
+    SLOTS = 12
+    fill_letters_row(ws, 4, START_COL, SLOTS, nombre1)
+    fill_letters_row(ws, 5, START_COL, SLOTS, nombre2)
+    fill_letters_row(ws, 6, START_COL, SLOTS, apellido1)
+    fill_letters_row(ws, 7, START_COL, SLOTS, apellido2)
+
+    # Fecha dd/mm/aaaa
+    dd = f"{fecha_nac.day:02d}"
+    mm = f"{fecha_nac.month:02d}"
+    yyyy = f"{fecha_nac.year:04d}"
+
+    # Día: C10-D10 (3,4)
+    ws.cell(10, 3).value = int(dd[0])
+    ws.cell(10, 4).value = int(dd[1])
+
+    # Mes: F10-G10 (6,7)
+    ws.cell(10, 6).value = int(mm[0])
+    ws.cell(10, 7).value = int(mm[1])
+
+    # Año: I10-L10 (9..12)
+    ws.cell(10, 9).value = int(yyyy[0])
+    ws.cell(10, 10).value = int(yyyy[1])
+    ws.cell(10, 11).value = int(yyyy[2])
+    ws.cell(10, 12).value = int(yyyy[3])
+
+    wb.save(out_xlsx)
+
+
+def recalc_with_libreoffice(input_xlsx: str, output_xlsx: str):
+    """
+    Fuerza recálculo abriendo y re-guardando con LibreOffice (soffice).
+    Requiere 'libreoffice' instalado (packages.txt en Streamlit Cloud).
+    """
+    soffice = shutil.which("soffice")
+    if not soffice:
+        raise RuntimeError("No se encontró 'soffice'. En Streamlit Cloud debes tener packages.txt con 'libreoffice'.")
+
+    outdir = os.path.dirname(output_xlsx)
+    os.makedirs(outdir, exist_ok=True)
+
+    # Convertir a xlsx de nuevo (LO recalcula al abrir)
+    cmd = [
+        soffice,
+        "--headless",
+        "--nologo",
+        "--nolockcheck",
+        "--norestore",
+        "--convert-to", "xlsx",
+        "--outdir", outdir,
+        input_xlsx
+    ]
+    subprocess.check_call(cmd)
+
+    # LibreOffice genera el archivo con el mismo nombre en outdir
+    generated = os.path.join(outdir, os.path.splitext(os.path.basename(input_xlsx))[0] + ".xlsx")
+    if not os.path.exists(generated):
+        raise RuntimeError("LibreOffice no generó el XLSX recalculado como se esperaba.")
+
+    # Lo movemos/renombramos al output_xlsx
+    if os.path.exists(output_xlsx):
+        os.remove(output_xlsx)
+    os.rename(generated, output_xlsx)
+
+
+def read_estudio_completo_values(xlsx_path: str):
+    """
+    Lee SOLO la hoja 'Estudio completo' ya con valores calculados.
+    """
+    wb = load_workbook(xlsx_path, data_only=True)
+    if "Estudio completo" not in wb.sheetnames:
+        raise ValueError("No se encontró la hoja 'Estudio completo' en el Excel recalculado.")
+
+    ws = wb["Estudio completo"]
+    filas = []
+    for row in ws.iter_rows(values_only=True):
+        # Filtra filas vacías
+        if any(cell not in (None, "", "None") for cell in row):
+            filas.append(row)
+    return filas
+
+
+def build_pdf_estudio_completo(nombre_cliente: str, fecha_nac: date, filas_estudio):
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=LETTER,
+        rightMargin=50,
+        leftMargin=50,
+        topMargin=60,
+        bottomMargin=50
+    )
+
+    styles = getSampleStyleSheet()
+
+    # Estilos Eugenia Mística
+    styles.add(ParagraphStyle(
+        name="EM_Titulo",
+        fontSize=26,
+        leading=30,
+        alignment=1,
+        textColor=HexColor("#7A1E3A"),  # rojo místico
+        spaceAfter=10
+    ))
+    styles.add(ParagraphStyle(
+        name="EM_Sub",
+        fontSize=12,
+        leading=16,
+        alignment=1,
+        textColor=HexColor("#2E2E2E"),
+        spaceAfter=4
+    ))
+    styles.add(ParagraphStyle(
+        name="EM_Dorado",
+        fontSize=12,
+        leading=16,
+        alignment=1,
+        textColor=HexColor("#9C7A3F"),  # dorado elegante
+        spaceAfter=26
+    ))
+    styles.add(ParagraphStyle(
+        name="EM_Texto",
+        fontSize=11,
+        leading=16,
+        textColor=HexColor("#2E2E2E"),
+        spaceAfter=10
+    ))
+    styles.add(ParagraphStyle(
+        name="EM_Marca",
+        fontSize=10,
+        leading=14,
+        alignment=1,
+        textColor=HexColor("#666666"),
+        spaceBefore=40
+    ))
+
+    elementos = []
+
+    # Portada
+    elementos.append(Spacer(1, 90))
+    elementos.append(Paragraph("Estudio Numerológico Completo", styles["EM_Titulo"]))
+    elementos.append(Paragraph(norm_txt(nombre_cliente), styles["EM_Sub"]))
+    elementos.append(Paragraph(f"Nacimiento: {fecha_nac.strftime('%d/%m/%Y')}", styles["EM_Dorado"]))
+    elementos.append(Spacer(1, 120))
+    elementos.append(Paragraph("Eugenia Mística · Numerología & Conciencia", styles["EM_Marca"]))
+    elementos.append(PageBreak())
+
+    # Contenido: SOLO Estudio completo
+    for fila in filas_estudio:
+        texto = " ".join(str(x) for x in fila if x not in (None, "", "None")).strip()
+        if texto:
+            elementos.append(Paragraph(texto, styles["EM_Texto"]))
+
+    doc.build(elementos)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+# =========================================================
+# UI PREMIUM: Desbloqueo
+# =========================================================
 
 st.markdown("---")
 st.markdown("## 🔐 Versión Completa (Premium + PDF personalizado)")
@@ -1520,8 +1755,8 @@ with colv1:
     nombre_compra = st.text_input(
         "Nombre (exactamente como en tu compra)",
         key="nombre_compra",
-        max_chars=80
-    ).strip()
+        max_chars=60
+    )
 
 with colv2:
     fecha_compra = st.date_input(
@@ -1538,11 +1773,14 @@ clave_ingresada = st.text_input(
 
 confirmar_datos = st.button("🔓 Confirmar datos y desbloquear")
 
+if "premium_activo" not in st.session_state:
+    st.session_state.premium_activo = False
+
 # =========================================================
-# VALIDACIÓN
+# VALIDACIÓN CLAVE
 # =========================================================
 if confirmar_datos:
-    if not nombre_compra:
+    if not nombre_compra.strip():
         st.warning("Escribe tu nombre tal como aparece en tu compra.")
         st.stop()
 
@@ -1554,7 +1792,6 @@ if confirmar_datos:
         st.warning("Debes introducir tu clave personal.")
         st.stop()
 
-    # Debe existir en tu código global (ya lo tienes en tu app)
     clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
 
     if clave_ingresada != clave_esperada:
@@ -1567,317 +1804,85 @@ if confirmar_datos:
 
 
 # =========================================================
-# 📘 MOTOR PREMIUM (EXCEL + PDF) — OCULTO (solo cuando premium_activo)
+# 📘 MOTOR PREMIUM (EXCEL + PDF) — OCULTO
+#   - Escribe en Tarot (Nombre1/2 + Apellido1/2 + Fecha)
+#   - Recalcula con LibreOffice
+#   - PDF SOLO Estudio completo
 # =========================================================
+
 if st.session_state.get("premium_activo"):
 
-    # -------------------------
-    # Helpers de texto
-    # -------------------------
-    def _norm(txt: str) -> str:
-        if not txt:
-            return ""
-        txt = unicodedata.normalize("NFKD", txt)
-        txt = "".join(c for c in txt if not unicodedata.combining(c))
-        txt = txt.upper()
-        # deja letras y espacios
-        txt = re.sub(r"[^A-Z\s]", " ", txt)
-        txt = re.sub(r"\s+", " ", txt).strip()
-        return txt
+    st.markdown("### 📄 Generar tu PDF Premium (Estudio completo)")
 
-    def _solo_letras(txt: str) -> str:
-        txt = _norm(txt)
-        return txt.replace(" ", "")
+    # Autopartición del nombre (editable)
+    n1, n2, a1, a2 = split_nombre_completo(nombre_compra)
 
-    def _split_nombre(nombre_full: str):
-        """
-        Regla práctica:
-        - Nombre1 = primer token
-        - Apellido2 = último token
-        - Apellido1 = penúltimo token (si existe)
-        - Nombre2 = todo lo que quede en el medio (si existe)
-        """
-        t = _norm(nombre_full).split()
-        if not t:
-            return "", "", "", ""
-        if len(t) == 1:
-            return t[0], "", "", ""
-        if len(t) == 2:
-            return t[0], "", t[1], ""
-        if len(t) == 3:
-            return t[0], t[1], t[2], ""
-        # len >= 4
-        nombre1 = t[0]
-        apellido2 = t[-1]
-        apellido1 = t[-2]
-        nombre2 = " ".join(t[1:-2]).strip()
-        return nombre1, nombre2, apellido1, apellido2
-
-    def _escribir_slots(ws, row, col_start, col_end, texto):
-        """
-        Escribe letra por letra en celdas consecutivas.
-        Borra el resto si sobran slots.
-        """
-        letras = list(_solo_letras(texto))
-        n_slots = col_end - col_start + 1
-        for i in range(n_slots):
-            value = letras[i] if i < len(letras) else None
-            ws.cell(row=row, column=col_start + i, value=value)
-
-    def _escribir_fecha(ws, fecha_dt):
-        """
-        En tu plantilla:
-        Día:  D10 E10
-        Mes:  G10 H10
-        Año:  J10 K10 L10 M10
-        """
-        dd = f"{fecha_dt.day:02d}"
-        mm = f"{fecha_dt.month:02d}"
-        yy = f"{fecha_dt.year:04d}"
-
-        ws["D10"] = int(dd[0])
-        ws["E10"] = int(dd[1])
-
-        ws["G10"] = int(mm[0])
-        ws["H10"] = int(mm[1])
-
-        ws["J10"] = int(yy[0])
-        ws["K10"] = int(yy[1])
-        ws["L10"] = int(yy[2])
-        ws["M10"] = int(yy[3])
-
-    # -------------------------
-    # Rutas
-    # -------------------------
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    EXCEL_ORIG = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
-
-    if not os.path.exists(EXCEL_ORIG):
-        st.error("No encuentro el archivo Numerologia_Eugenia.xlsx en la misma carpeta de app.py.")
-        st.stop()
-
-    # -------------------------
-    # UI de confirmación (para alimentar Tarot)
-    # -------------------------
-    st.markdown("### 📌 Confirmación (para calcular el Excel correctamente)")
-    st.caption("El Excel necesita Nombre1/Nombre2/Apellido1/Apellido2 + Fecha, para recalcular y producir ‘Estudio completo’.")
-
-    n1_def, n2_def, a1_def, a2_def = _split_nombre(nombre_compra)
+    st.markdown("#### 🧾 Confirmación (para armar el Excel correctamente)")
+    st.caption("Si tu nombre de compra tiene 2 nombres o 2 apellidos, ajústalo aquí para que el Excel calcule perfecto.")
 
     c1, c2 = st.columns(2)
     with c1:
-        nombre1 = st.text_input("Nombre 1", value=n1_def, key="prem_nombre1")
-        nombre2 = st.text_input("Nombre 2 (opcional)", value=n2_def, key="prem_nombre2")
+        nombre1 = st.text_input("Nombre 1", value=n1, key="em_nombre1")
+        nombre2 = st.text_input("Nombre 2 (opcional)", value=n2, key="em_nombre2")
     with c2:
-        apellido1 = st.text_input("Apellido 1", value=a1_def, key="prem_apellido1")
-        apellido2 = st.text_input("Apellido 2 (opcional)", value=a2_def, key="prem_apellido2")
+        apellido1 = st.text_input("Apellido 1", value=a1, key="em_apellido1")
+        apellido2 = st.text_input("Apellido 2 (opcional)", value=a2, key="em_apellido2")
 
-    generar_pdf = st.button("✨ Generar mi PDF Premium", type="primary")
-
-    # -------------------------
-    # Motor: escribir -> recalcular -> leer estudio completo -> PDF
-    # -------------------------
-    def _recalcular_con_soffice(xlsx_in: str, out_dir: str) -> str:
-        """
-        Usa LibreOffice headless para abrir y re-guardar el xlsx,
-        lo que fuerza cálculo de fórmulas.
-        Retorna ruta del xlsx recalculado.
-        """
-        # Genera un xlsx nuevo en out_dir
-        cmd = [
-            "soffice",
-            "--headless",
-            "--nologo",
-            "--nodefault",
-            "--nofirststartwizard",
-            "--norestore",
-            "--convert-to",
-            "xlsx",
-            "--outdir",
-            out_dir,
-            xlsx_in,
-        ]
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # LibreOffice conserva nombre base
-        base = os.path.splitext(os.path.basename(xlsx_in))[0]
-        out_path = os.path.join(out_dir, f"{base}.xlsx")
-        if not os.path.exists(out_path):
-            # a veces cambia el nombre; busca el primero xlsx del out_dir
-            for f in os.listdir(out_dir):
-                if f.lower().endswith(".xlsx"):
-                    return os.path.join(out_dir, f)
-            raise FileNotFoundError("LibreOffice no generó el archivo .xlsx recalculado.")
-        return out_path
-
-    def _leer_estudio_completo(xlsx_path: str):
-        wb2 = load_workbook(xlsx_path, data_only=True)
-        # Busca hoja ignorando mayúsculas/espacios
-        objetivo = None
-        for s in wb2.sheetnames:
-            if s.strip().lower() == "estudio completo":
-                objetivo = s
-                break
-        if not objetivo:
-            return []
-
-        ws2 = wb2[objetivo]
-        filas = []
-        for row in ws2.iter_rows(values_only=True):
-            # junta celdas con contenido
-            parts = [str(x).strip() for x in row if x not in (None, "", "None")]
-            if parts:
-                filas.append(" ".join(parts))
-        return filas
-
-    def _pdf_estudio_completo(nombre_cliente, fecha_nac, lineas):
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=LETTER,
-            rightMargin=52,
-            leftMargin=52,
-            topMargin=62,
-            bottomMargin=56
-        )
-
-        styles = getSampleStyleSheet()
-
-        # Paleta Eugenia Mística
-        ROJO = HexColor("#7A1E3A")
-        DORADO = HexColor("#9C7A3F")
-        GRIS = HexColor("#2E2E2E")
-
-        styles.add(ParagraphStyle(
-            name="EM_Titulo",
-            fontSize=26,
-            leading=30,
-            alignment=1,
-            textColor=ROJO,
-            spaceAfter=10
-        ))
-        styles.add(ParagraphStyle(
-            name="EM_Sub",
-            fontSize=12,
-            leading=16,
-            alignment=1,
-            textColor=DORADO,
-            spaceAfter=18
-        ))
-        styles.add(ParagraphStyle(
-            name="EM_Marca",
-            fontSize=9.5,
-            leading=12,
-            alignment=1,
-            textColor=HexColor("#666666"),
-            spaceBefore=22
-        ))
-        styles.add(ParagraphStyle(
-            name="EM_Texto",
-            fontSize=11,
-            leading=16,
-            textColor=GRIS,
-            spaceAfter=10
-        ))
-        styles.add(ParagraphStyle(
-            name="EM_Seccion",
-            fontSize=13,
-            leading=18,
-            textColor=ROJO,
-            spaceBefore=14,
-            spaceAfter=8
-        ))
-
-        elems = []
-        # Portada
-        elems.append(Spacer(1, 90))
-        elems.append(Paragraph("Estudio Numerológico Completo", styles["EM_Titulo"]))
-        elems.append(Paragraph(_norm(nombre_cliente).title(), styles["EM_Sub"]))
-        elems.append(Paragraph(f"Nacimiento: {fecha_nac.strftime('%d/%m/%Y')}", styles["EM_Sub"]))
-        elems.append(Spacer(1, 26))
-        elems.append(Paragraph("Eugenia Mística · Numerología & Conciencia", styles["EM_Marca"]))
-        elems.append(PageBreak())
-
-        # Contenido: “por párrafos”, y si detecta algo tipo encabezado, lo resalta
-        for ln in lineas:
-            t = (ln or "").strip()
-            if not t:
-                continue
-
-            # heurística simple: líneas cortas o que terminan en ":" como encabezado
-            if (len(t) <= 50 and t.isupper()) or t.endswith(":"):
-                elems.append(Paragraph(t.replace(":", ""), styles["EM_Seccion"]))
-            else:
-                elems.append(Paragraph(t, styles["EM_Texto"]))
-
-        doc.build(elems)
-        buffer.seek(0)
-        return buffer.getvalue()
+    generar_pdf = st.button("✨ Generar mi PDF Premium")
 
     if generar_pdf:
-        # Validaciones mínimas para Tarot
-        if not nombre1.strip() or not apellido1.strip():
-            st.error("Para calcular el Tarot, al menos debes tener Nombre 1 y Apellido 1.")
+        # Rutas
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
+
+        if not os.path.exists(EXCEL_PATH):
+            st.error("No encuentro 'Numerologia_Eugenia.xlsx' en la misma carpeta de tu app.py.")
             st.stop()
 
-        with st.spinner("Generando tu PDF Premium… (calculando Excel)"):
+        with st.spinner("Generando tu PDF Premium... (calculando Excel)"):
             try:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    # Copia plantilla
-                    tmp_xlsx = os.path.join(tmpdir, "Numerologia_Eugenia_tmp.xlsx")
-                    shutil.copyfile(EXCEL_ORIG, tmp_xlsx)
+                with tempfile.TemporaryDirectory() as tmp:
+                    xlsx_edit = os.path.join(tmp, "input_edit.xlsx")
+                    xlsx_calc = os.path.join(tmp, "recalc.xlsx")
 
-                    # Abre para escribir inputs (Tarot)
-                    wbw = load_workbook(tmp_xlsx, data_only=False)
-                    if "Cartas del Tarot (FN)" not in wbw.sheetnames:
-                        st.error("No encuentro la hoja 'Cartas del Tarot (FN)' en tu Excel.")
+                    # 1) Copiamos tu template al temp
+                    shutil.copy2(EXCEL_PATH, xlsx_edit)
+
+                    # 2) Escribimos inputs en la hoja Tarot
+                    write_inputs_to_tarot_xlsx(
+                        src_xlsx=xlsx_edit,
+                        out_xlsx=xlsx_edit,  # sobrescribe en el mismo
+                        nombre1=nombre1,
+                        nombre2=nombre2,
+                        apellido1=apellido1,
+                        apellido2=apellido2,
+                        fecha_nac=fecha_compra
+                    )
+
+                    # 3) Recalculamos con LibreOffice
+                    recalc_with_libreoffice(xlsx_edit, xlsx_calc)
+
+                    # 4) Leemos SOLO 'Estudio completo' ya calculado
+                    filas_estudio = read_estudio_completo_values(xlsx_calc)
+
+                    if not filas_estudio:
+                        st.error("‘Estudio completo’ quedó vacío después del recálculo. Revisa fórmulas del Excel.")
                         st.stop()
 
-                    wst = wbw["Cartas del Tarot (FN)"]
+                    # 5) PDF bonito
+                    nombre_pdf = norm_txt(nombre_compra)
+                    pdf_bytes = build_pdf_estudio_completo(nombre_pdf, fecha_compra, filas_estudio)
 
-                    # Slots según tu plantilla (D4:O4, D5:O5, D6:O6, D7:O7)
-                    # Nombre 1
-                    _escribir_slots(wst, row=4, col_start=4, col_end=15, texto=nombre1)
-                    # Nombre 2
-                    _escribir_slots(wst, row=5, col_start=4, col_end=15, texto=nombre2)
-                    # Apellido 1
-                    _escribir_slots(wst, row=6, col_start=4, col_end=15, texto=apellido1)
-                    # Apellido 2
-                    _escribir_slots(wst, row=7, col_start=4, col_end=15, texto=apellido2)
+                st.success("PDF listo ✅")
 
-                    # Fecha
-                    _escribir_fecha(wst, fecha_compra)
+                st.download_button(
+                    "📄 Descargar tu Estudio Numerológico Completo (PDF)",
+                    data=pdf_bytes,
+                    file_name=f"Estudio_Numerologico_{re.sub(r'[^A-Za-z0-9_-]+','_', nombre_compra.strip())}.pdf",
+                    mime="application/pdf"
+                )
 
-                    wbw.save(tmp_xlsx)
-                    wbw.close()
-
-                    # Recalcular con LibreOffice (Streamlit Cloud)
-                    try:
-                        recalculado = _recalcular_con_soffice(tmp_xlsx, tmpdir)
-                    except FileNotFoundError:
-                        st.error("No se encontró 'soffice'. En Streamlit Cloud debes instalar LibreOffice con packages.txt.")
-                        st.stop()
-                    except subprocess.CalledProcessError as e:
-                        st.error("Falló el recalculo con LibreOffice. Revisa logs.")
-                        st.stop()
-
-                    # Leer SOLO “Estudio completo”
-                    lineas = _leer_estudio_completo(recalculado)
-                    if not lineas:
-                        st.error("‘Estudio completo’ salió vacío. Eso indica que el Excel no recalculó o no está alimentado correctamente.")
-                        st.stop()
-
-                    pdf_bytes = _pdf_estudio_completo(nombre_compra, fecha_compra, lineas)
-
-            except Exception as ex:
-                st.error(f"Error generando PDF: {ex}")
-                st.stop()
-
-        st.success("PDF listo ✅")
-        st.download_button(
-            "📄 Descargar tu Estudio Numerológico Completo (PDF)",
-            data=pdf_bytes,
-            file_name=f"Estudio_Numerologico_{_norm(nombre_compra).replace(' ','')}.pdf",
-            mime="application/pdf"
-        )
-
+            except subprocess.CalledProcessError:
+                st.error("LibreOffice falló al recalcular. Revisa que packages.txt tenga 'libreoffice' y que el deploy haya rebuild.")
+            except Exception as e:
+                st.error(f"Error generando PDF: {e}")
