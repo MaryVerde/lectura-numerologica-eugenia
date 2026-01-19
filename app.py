@@ -2073,135 +2073,147 @@ if st.session_state.get("premium_activo"):
             "fecha_nac": fecha_nac.strftime("%d/%m/%Y"),
             "items": items,
         }
-
-
     # =========================
-    # PDF BONITO (sin tablas feas, respirable)
-    # =========================
-    def build_pdf_premium(resultado: dict) -> bytes:
-        buffer = BytesIO()
+# PDF BONITO (sin tablas feas, respirable)
+# =========================
+def build_pdf_premium(resultado: dict) -> bytes:
+    buffer = BytesIO()
 
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=LETTER,
-            rightMargin=55,
-            leftMargin=55,
-            topMargin=60,
-            bottomMargin=55
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=LETTER,
+        rightMargin=55,
+        leftMargin=55,
+        topMargin=60,
+        bottomMargin=55
+    )
+
+    styles = getSampleStyleSheet()
+
+    styles.add(ParagraphStyle(
+        name="EM_TituloPortada",
+        fontSize=26,
+        leading=32,
+        alignment=1,
+        textColor=HexColor(COLOR_ROJO_MISTICO),
+        spaceAfter=16
+    ))
+
+    styles.add(ParagraphStyle(
+        name="EM_SubPortada",
+        fontSize=13.5,
+        leading=18,
+        alignment=1,
+        textColor=HexColor(COLOR_DORADO),
+        spaceAfter=10
+    ))
+
+    styles.add(ParagraphStyle(
+        name="EM_Marca",
+        fontSize=10.5,
+        leading=14,
+        alignment=1,
+        textColor=HexColor(COLOR_GRIS),
+        spaceBefore=18
+    ))
+
+    styles.add(ParagraphStyle(
+        name="EM_TituloSeccion",
+        fontSize=15.5,
+        leading=21,
+        textColor=HexColor(COLOR_ROJO_MISTICO),
+        spaceBefore=18,
+        spaceAfter=10
+    ))
+
+    styles.add(ParagraphStyle(
+        name="EM_Texto",
+        fontSize=11.2,
+        leading=17,
+        textColor=HexColor(COLOR_TEXTO),
+        spaceAfter=12
+    ))
+
+    elementos = []
+
+    # -------------------------
+    # PORTADA
+    # -------------------------
+    elementos.append(Spacer(1, 70))
+    elementos.append(
+        Paragraph("Lectura Numerológica Premium", styles["EM_TituloPortada"])
+    )
+    elementos.append(
+        Paragraph(
+            f"Informe personalizado para<br/>{resultado['nombre_full']}",
+            styles["EM_SubPortada"]
+        )
+    )
+    elementos.append(
+        Paragraph(
+            f"Fecha de nacimiento: {resultado['fecha_nac']}",
+            styles["EM_SubPortada"]
+        )
+    )
+    elementos.append(Spacer(1, 34))
+    elementos.append(
+        Paragraph(
+            "Eugenia Mística · Numerología & Conciencia",
+            styles["EM_Marca"]
+        )
+    )
+    elementos.append(PageBreak())
+
+    # -------------------------
+    # CONTENIDO
+    # -------------------------
+    for (hoja_dicc, etiqueta, valor, nota) in resultado["items"]:
+
+        # Título de sección
+        elementos.append(
+            Paragraph(etiqueta, styles["EM_TituloSeccion"])
         )
 
-        styles = getSampleStyleSheet()
+        # Resultado (misma tipografía que el texto)
+        if valor is None:
+            resultado_txt = "—"
+        else:
+            resultado_txt = str(valor)
 
-        styles.add(ParagraphStyle(
-            name="EM_TituloPortada",
-            fontSize=26,
-            leading=32,
-            alignment=1,
-            textColor=HexColor(COLOR_ROJO_MISTICO),
-            spaceAfter=16
-        ))
+        elementos.append(
+            Paragraph(f"Resultado: {resultado_txt}", styles["EM_Texto"])
+        )
 
-        styles.add(ParagraphStyle(
-            name="EM_SubPortada",
-            fontSize=13.5,
-            leading=18,
-            alignment=1,
-            textColor=HexColor(COLOR_DORADO),
-            spaceAfter=10
-        ))
+        # Nota directa (si existe)
+        if nota:
+            elementos.append(
+                Paragraph(nota, styles["EM_Texto"])
+            )
+            continue
 
-        styles.add(ParagraphStyle(
-            name="EM_Marca",
-            fontSize=10.5,
-            leading=14,
-            alignment=1,
-            textColor=HexColor(COLOR_GRIS),
-            spaceBefore=18
-        ))
+        # Texto largo desde diccionario
+        if isinstance(valor, int):
+            info = dicc_get(hoja_dicc, valor)
+            texto = info.get("texto", "").strip()
 
-        styles.add(ParagraphStyle(
-            name="EM_TituloSeccion",
-            fontSize=15.5,
-            leading=21,
-            textColor=HexColor(COLOR_ROJO_MISTICO),
-            spaceBefore=16,
-            spaceAfter=8
-        ))
-
-        styles.add(ParagraphStyle(
-            name="EM_Valor",
-            fontSize=11.2,
-            leading=16,
-            textColor=HexColor(COLOR_TEXTO),
-            spaceAfter=8
-        ))
-
-        styles.add(ParagraphStyle(
-            name="EM_Texto",
-            fontSize=11.2,
-            leading=16.8,
-            textColor=HexColor(COLOR_TEXTO),
-            spaceAfter=10
-        ))
-
-        elementos = []
-
-        # Portada
-        elementos.append(Spacer(1, 70))
-        elementos.append(Paragraph("Lectura Numerológica Premium", styles["EM_TituloPortada"]))
-        elementos.append(Paragraph(f"Informe personalizado para<br/><b>{resultado['nombre_full']}</b>", styles["EM_SubPortada"]))
-        elementos.append(Paragraph(f"Fecha de nacimiento: <b>{resultado['fecha_nac']}</b>", styles["EM_SubPortada"]))
-        elementos.append(Spacer(1, 34))
-        elementos.append(Paragraph("Eugenia Mística · Numerología & Conciencia", styles["EM_Marca"]))
-        elementos.append(PageBreak())
-
-        # Contenido: por cada ítem, buscar diccionario por hoja y número
-        for (hoja_dicc, etiqueta, valor, nota) in resultado["items"]:
-
-            # título sección
-            elementos.append(Paragraph(etiqueta, styles["EM_TituloSeccion"]))
-
-            # valor mostrado
-            if isinstance(valor, str):
-                elementos.append(Paragraph(f"<b>Resultado:</b> {valor}", styles["EM_Valor"]))
-            elif valor is None:
-                elementos.append(Paragraph(f"<b>Resultado:</b> —", styles["EM_Valor"]))
+            if texto:
+                partes = [p.strip() for p in texto.split("\n") if p.strip()]
+                for p in partes:
+                    elementos.append(
+                        Paragraph(p, styles["EM_Texto"])
+                    )
             else:
-                elementos.append(Paragraph(f"<b>Resultado:</b> <b>{valor}</b>", styles["EM_Valor"]))
+                elementos.append(
+                    Paragraph(
+                        "No se encontró texto asociado a este resultado.",
+                        styles["EM_Texto"]
+                    )
+                )
 
-            # nota si aplica
-            if nota:
-                elementos.append(Paragraph(nota, styles["EM_Texto"]))
-                continue
-
-            # si el valor es numérico, buscamos texto largo
-            if isinstance(valor, int):
-                info = dicc_get(hoja_dicc, valor)
-                titulo = info.get("titulo", "").strip()
-                texto  = info.get("texto", "").strip()
-
-                # si hay título interno, lo ponemos discreto
-                if titulo:
-                    elementos.append(Paragraph(f"<b>{titulo}</b>", styles["EM_Texto"]))
-
-                if texto:
-                    partes = [p.strip() for p in texto.split("\n") if p.strip()]
-                    if not partes:
-                        partes = [texto]
-                    for p in partes:
-                        elementos.append(Paragraph(p, styles["EM_Texto"]))
-                else:
-                    elementos.append(Paragraph("Texto no encontrado en el diccionario para este resultado.", styles["EM_Texto"]))
-            else:
-                # rangos (strings) no buscan diccionario
-                pass
-
-            elementos.append(Spacer(1, 6))
-
-        doc.build(elementos)
-        buffer.seek(0)
-        return buffer.getvalue()
-
+    doc.build(elementos)
+    buffer.seek(0)
+    return buffer.getvalue()
+   
 
     # =========================
     # EJECUCIÓN + DESCARGA
@@ -2218,5 +2230,3 @@ if st.session_state.get("premium_activo"):
         file_name=f"Lectura_Premium_{_norm_txt(nombre_compra).replace(' ', '')}.pdf",
         mime="application/pdf"
     )
-
-
