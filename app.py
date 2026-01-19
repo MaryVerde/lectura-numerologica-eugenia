@@ -10,21 +10,13 @@ import hashlib
 import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
-
-
-if "premium_activo" not in st.session_state:
-    st.session_state.premium_activo = False
-
-
-if st.session_state.get("premium_activo"):
- 
- from collections import Counter
-
+from collections import Counter
 from openpyxl import load_workbook
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.colors import HexColor
+
 
 
 # =====================================================
