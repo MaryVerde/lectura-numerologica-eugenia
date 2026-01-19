@@ -1558,24 +1558,7 @@ if confirmar_datos:
         st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
         st.stop()
 
-        # ✅ DESBLOQUEO
-    st.session_state.premium_activo = True
-    st.success("Versión completa desbloqueada ✅")
-
-    # 1️⃣ calcular resultados
-    resultado = calcular_todo(nombre_compra, fecha_compra)
-
-    # 2️⃣ generar PDF
-    pdf_bytes = build_pdf_premium(resultado)
-
-    # 3️⃣ botón de descarga
-    st.download_button(
-        "📄 Descargar tu Informe Premium (PDF)",
-        data=pdf_bytes,
-        file_name=f"Lectura_Premium_{_norm_txt(nombre_compra)}.pdf",
-        mime="application/pdf",
-    )
-
+       
 
 # #####################################################
 # =========================================================
@@ -2228,4 +2211,20 @@ def build_pdf_premium(resultado: dict) -> bytes:
     return buffer.getvalue()
    
 
-  
+   # ✅ DESBLOQUEO
+    st.session_state.premium_activo = True
+    st.success("Versión completa desbloqueada ✅")
+
+    # 1️⃣ calcular resultados
+    resultado = calcular_todo(nombre_compra, fecha_compra)
+
+    # 2️⃣ generar PDF
+    pdf_bytes = build_pdf_premium(resultado)
+
+    # 3️⃣ botón de descarga
+    st.download_button(
+        "📄 Descargar tu Informe Premium (PDF)",
+        data=pdf_bytes,
+        file_name=f"Lectura_Premium_{_norm_txt(nombre_compra)}.pdf",
+        mime="application/pdf",
+    )
