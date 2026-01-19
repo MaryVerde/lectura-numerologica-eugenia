@@ -2211,7 +2211,13 @@ def build_pdf_premium(resultado: dict) -> bytes:
     return buffer.getvalue()
    
 
-   # ✅ DESBLOQUEO
+   # ======================================================
+# ✅ DESBLOQUEO + EJECUCIÓN PREMIUM (BLOQUE FINAL ÚNICO)
+# ======================================================
+
+if confirmar_datos:
+
+    # (aquí tú ya validas la clave, si esa parte ya la tienes, se respeta)
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅")
 
@@ -2228,3 +2234,4 @@ def build_pdf_premium(resultado: dict) -> bytes:
         file_name=f"Lectura_Premium_{_norm_txt(nombre_compra)}.pdf",
         mime="application/pdf",
     )
+
