@@ -2211,7 +2211,7 @@ def build_pdf_premium(resultado: dict) -> bytes:
     return buffer.getvalue()
    
 
-   # ======================================================
+ # ======================================================
 # ✅ DESBLOQUEO + EJECUCIÓN PREMIUM (BLOQUE FINAL ÚNICO)
 # ======================================================
 
@@ -2234,4 +2234,3 @@ if confirmar_datos:
         file_name=f"Lectura_Premium_{_norm_txt(nombre_compra)}.pdf",
         mime="application/pdf",
     )
-
