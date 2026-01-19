@@ -2218,4 +2218,3 @@ if st.session_state.get("premium_activo"):
         file_name=f"Lectura_Premium_{norm_txt(nombre_compra).replace(' ', '')}.pdf",
         mime="application/pdf"
     )
-
