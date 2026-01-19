@@ -1166,7 +1166,7 @@ def texto_telefono(num_tel: int) -> str:
     return TEXTO_TELEFONO.get( num_tel, "Teléfono: comunicación consciente y límites sanos.")
 
 # =====================================================
-# PAGO: TEXTOS PROFUNDOS (10–12 líneas aprox)
+# TEXTOS PROFUNDOS (10–12 líneas aprox)
 # Basados en tu Año Personal (ap) y modulados por mp/sp/dp
 # =====================================================
 NUM_RASGOS = {
@@ -1484,265 +1484,10 @@ if ADMIN_PIN:
                     st.code(generar_clave_unica(nombre, fecha_nac), language="text")
             else:
                 st.error("PIN incorrecto")
+
+
 # =========================================================
 # 🔐 VERSIÓN COMPLETA (PAGO) - BLOQUEO POR CLAVE + NOMBRE + FECHA
-# =========================================================
-
-import os
-import re
-import shutil
-import subprocess
-import tempfile
-from datetime import date
-from io import BytesIO
-
-import streamlit as st
-from openpyxl import load_workbook
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.pagesizes import LETTER
-from reportlab.lib.colors import HexColor
-
-
-# ---------- Helpers ----------
-def norm_txt(s: str) -> str:
-    s = (s or "").strip()
-    s = re.sub(r"\s+", " ", s)
-    return s
-
-def split_nombre_completo(full: str):
-    """
-    Heurística latina:
-    - Apellido1 = penúltima palabra
-    - Apellido2 = última palabra
-    - Nombres = lo demás (Nombre1 = primero, Nombre2 = resto)
-    Si hay 2 o 3 palabras, se ajusta.
-    """
-    full = norm_txt(full)
-    parts = [p for p in full.split(" ") if p]
-    nombre1 = nombre2 = apellido1 = apellido2 = ""
-
-    if len(parts) == 0:
-        return nombre1, nombre2, apellido1, apellido2
-
-    if len(parts) == 1:
-        nombre1 = parts[0]
-        return nombre1, nombre2, apellido1, apellido2
-
-    if len(parts) == 2:
-        nombre1, apellido1 = parts
-        return nombre1, nombre2, apellido1, apellido2
-
-    if len(parts) == 3:
-        nombre1 = parts[0]
-        apellido1 = parts[1]
-        apellido2 = parts[2]
-        return nombre1, nombre2, apellido1, apellido2
-
-    # 4 o más
-    apellido1 = parts[-2]
-    apellido2 = parts[-1]
-    nombres = parts[:-2]
-    nombre1 = nombres[0] if nombres else ""
-    nombre2 = " ".join(nombres[1:]) if len(nombres) > 1 else ""
-    return nombre1, nombre2, apellido1, apellido2
-
-
-def fill_letters_row(ws, row_idx: int, start_col: int, slots: int, text: str):
-    """
-    Llena los cuadritos de letras (sin espacios).
-    Si el texto es más largo que slots, se recorta.
-    Si es más corto, se rellena con vacío.
-    """
-    txt = re.sub(r"\s+", "", norm_txt(text)).upper()
-    txt = txt[:slots]
-    for i in range(slots):
-        ch = txt[i] if i < len(txt) else ""
-        ws.cell(row=row_idx, column=start_col + i).value = ch
-
-
-def write_inputs_to_tarot_xlsx(src_xlsx: str, out_xlsx: str,
-                               nombre1: str, nombre2: str, apellido1: str, apellido2: str,
-                               fecha_nac: date):
-    """
-    Escribe en 'Cartas del Tarot (FN)' exactamente en los cuadros:
-    - Nombre1 -> fila 4, cols D..O (12)
-    - Nombre2 -> fila 5, cols D..O (12)
-    - Apellido1 -> fila 6, cols D..O (12)
-    - Apellido2 -> fila 7, cols D..O (12)
-    - Día -> fila 10, cols C..D (2)
-    - Mes -> fila 10, cols F..G (2)
-    - Año -> fila 10, cols I..L (4)
-    """
-    wb = load_workbook(src_xlsx, data_only=False)
-    if "Cartas del Tarot (FN)" not in wb.sheetnames:
-        raise ValueError("No existe la hoja 'Cartas del Tarot (FN)' en el Excel.")
-
-    ws = wb["Cartas del Tarot (FN)"]
-
-    # Letras (12 slots cada fila)
-    # D=4
-    START_COL = 4
-    SLOTS = 12
-    fill_letters_row(ws, 4, START_COL, SLOTS, nombre1)
-    fill_letters_row(ws, 5, START_COL, SLOTS, nombre2)
-    fill_letters_row(ws, 6, START_COL, SLOTS, apellido1)
-    fill_letters_row(ws, 7, START_COL, SLOTS, apellido2)
-
-    # Fecha dd/mm/aaaa
-    dd = f"{fecha_nac.day:02d}"
-    mm = f"{fecha_nac.month:02d}"
-    yyyy = f"{fecha_nac.year:04d}"
-
-    # Día: C10-D10 (3,4)
-    ws.cell(10, 3).value = int(dd[0])
-    ws.cell(10, 4).value = int(dd[1])
-
-    # Mes: F10-G10 (6,7)
-    ws.cell(10, 6).value = int(mm[0])
-    ws.cell(10, 7).value = int(mm[1])
-
-    # Año: I10-L10 (9..12)
-    ws.cell(10, 9).value = int(yyyy[0])
-    ws.cell(10, 10).value = int(yyyy[1])
-    ws.cell(10, 11).value = int(yyyy[2])
-    ws.cell(10, 12).value = int(yyyy[3])
-
-    wb.save(out_xlsx)
-
-
-def recalc_with_libreoffice(input_xlsx: str, output_xlsx: str):
-    """
-    Fuerza recálculo abriendo y re-guardando con LibreOffice (soffice).
-    Requiere 'libreoffice' instalado (packages.txt en Streamlit Cloud).
-    """
-    soffice = shutil.which("soffice")
-    if not soffice:
-        raise RuntimeError("No se encontró 'soffice'. En Streamlit Cloud debes tener packages.txt con 'libreoffice'.")
-
-    outdir = os.path.dirname(output_xlsx)
-    os.makedirs(outdir, exist_ok=True)
-
-    # Convertir a xlsx de nuevo (LO recalcula al abrir)
-    cmd = [
-        soffice,
-        "--headless",
-        "--nologo",
-        "--nolockcheck",
-        "--norestore",
-        "--convert-to", "xlsx",
-        "--outdir", outdir,
-        input_xlsx
-    ]
-    subprocess.check_call(cmd)
-
-    # LibreOffice genera el archivo con el mismo nombre en outdir
-    generated = os.path.join(outdir, os.path.splitext(os.path.basename(input_xlsx))[0] + ".xlsx")
-    if not os.path.exists(generated):
-        raise RuntimeError("LibreOffice no generó el XLSX recalculado como se esperaba.")
-
-    # Lo movemos/renombramos al output_xlsx
-    if os.path.exists(output_xlsx):
-        os.remove(output_xlsx)
-    os.rename(generated, output_xlsx)
-
-
-def read_estudio_completo_values(xlsx_path: str):
-    """
-    Lee SOLO la hoja 'Estudio completo' ya con valores calculados.
-    """
-    wb = load_workbook(xlsx_path, data_only=True)
-    if "Estudio completo" not in wb.sheetnames:
-        raise ValueError("No se encontró la hoja 'Estudio completo' en el Excel recalculado.")
-
-    ws = wb["Estudio completo"]
-    filas = []
-    for row in ws.iter_rows(values_only=True):
-        # Filtra filas vacías
-        if any(cell not in (None, "", "None") for cell in row):
-            filas.append(row)
-    return filas
-
-
-def build_pdf_estudio_completo(nombre_cliente: str, fecha_nac: date, filas_estudio):
-    buffer = BytesIO()
-
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=LETTER,
-        rightMargin=50,
-        leftMargin=50,
-        topMargin=60,
-        bottomMargin=50
-    )
-
-    styles = getSampleStyleSheet()
-
-    # Estilos Eugenia Mística
-    styles.add(ParagraphStyle(
-        name="EM_Titulo",
-        fontSize=26,
-        leading=30,
-        alignment=1,
-        textColor=HexColor("#7A1E3A"),  # rojo místico
-        spaceAfter=10
-    ))
-    styles.add(ParagraphStyle(
-        name="EM_Sub",
-        fontSize=12,
-        leading=16,
-        alignment=1,
-        textColor=HexColor("#2E2E2E"),
-        spaceAfter=4
-    ))
-    styles.add(ParagraphStyle(
-        name="EM_Dorado",
-        fontSize=12,
-        leading=16,
-        alignment=1,
-        textColor=HexColor("#9C7A3F"),  # dorado elegante
-        spaceAfter=26
-    ))
-    styles.add(ParagraphStyle(
-        name="EM_Texto",
-        fontSize=11,
-        leading=16,
-        textColor=HexColor("#2E2E2E"),
-        spaceAfter=10
-    ))
-    styles.add(ParagraphStyle(
-        name="EM_Marca",
-        fontSize=10,
-        leading=14,
-        alignment=1,
-        textColor=HexColor("#666666"),
-        spaceBefore=40
-    ))
-
-    elementos = []
-
-    # Portada
-    elementos.append(Spacer(1, 90))
-    elementos.append(Paragraph("Estudio Numerológico Completo", styles["EM_Titulo"]))
-    elementos.append(Paragraph(norm_txt(nombre_cliente), styles["EM_Sub"]))
-    elementos.append(Paragraph(f"Nacimiento: {fecha_nac.strftime('%d/%m/%Y')}", styles["EM_Dorado"]))
-    elementos.append(Spacer(1, 120))
-    elementos.append(Paragraph("Eugenia Mística · Numerología & Conciencia", styles["EM_Marca"]))
-    elementos.append(PageBreak())
-
-    # Contenido: SOLO Estudio completo
-    for fila in filas_estudio:
-        texto = " ".join(str(x) for x in fila if x not in (None, "", "None")).strip()
-        if texto:
-            elementos.append(Paragraph(texto, styles["EM_Texto"]))
-
-    doc.build(elementos)
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-# =========================================================
-# UI PREMIUM: Desbloqueo
 # =========================================================
 
 st.markdown("---")
@@ -1755,7 +1500,8 @@ with colv1:
     nombre_compra = st.text_input(
         "Nombre (exactamente como en tu compra)",
         key="nombre_compra",
-        max_chars=60
+        max_chars=40,
+        placeholder="Ej: Eugenia Mystikos"
     )
 
 with colv2:
@@ -1763,7 +1509,8 @@ with colv2:
         "Fecha de nacimiento (como en tu compra)",
         key="fecha_compra",
         min_value=date(1940, 1, 1),
-        max_value=date(2040, 12, 31)
+        max_value=date(2040, 12, 31),
+        value=date(1990, 1, 1),
     )
 
 clave_ingresada = st.text_input(
@@ -1771,15 +1518,15 @@ clave_ingresada = st.text_input(
     type="password"
 ).strip().upper()
 
+# 👉 BOTÓN CLAVE (ESTO ES LO QUE FALTABA)
 confirmar_datos = st.button("🔓 Confirmar datos y desbloquear")
 
-if "premium_activo" not in st.session_state:
-    st.session_state.premium_activo = False
+# =========================================================
+# VALIDACIÓN (SOLO SE EJECUTA AL PRESIONAR EL BOTÓN)
+# =========================================================
 
-# =========================================================
-# VALIDACIÓN CLAVE
-# =========================================================
 if confirmar_datos:
+
     if not nombre_compra.strip():
         st.warning("Escribe tu nombre tal como aparece en tu compra.")
         st.stop()
@@ -1795,94 +1542,679 @@ if confirmar_datos:
     clave_esperada = generar_clave_unica(nombre_compra, fecha_compra)
 
     if clave_ingresada != clave_esperada:
-        st.error("Clave inválida. Verifica nombre y fecha.")
+        st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
         st.stop()
 
+    # ✅ DESBLOQUEO
     st.session_state.premium_activo = True
-    st.success("Versión completa desbloqueada ✅")
-    st.rerun()
+    st.success("Versión completa desbloqueada ✅") 
 
-
+    #####################################################
 # =========================================================
-# 📘 MOTOR PREMIUM (EXCEL + PDF) — OCULTO
-#   - Escribe en Tarot (Nombre1/2 + Apellido1/2 + Fecha)
-#   - Recalcula con LibreOffice
-#   - PDF SOLO Estudio completo
+# 📘 MOTOR PREMIUM (PYTHON CALCULA TODO + DICCIONARIO EXCEL + PDF BONITO)
 # =========================================================
 
 if st.session_state.get("premium_activo"):
 
-    st.markdown("### 📄 Generar tu PDF Premium (Estudio completo)")
+    import os
+    import re
+    import unicodedata
+    from datetime import date, datetime
+    from io import BytesIO
+    from collections import Counter
 
-    # Autopartición del nombre (editable)
-    n1, n2, a1, a2 = split_nombre_completo(nombre_compra)
+    from openpyxl import load_workbook
 
-    st.markdown("#### 🧾 Confirmación (para armar el Excel correctamente)")
-    st.caption("Si tu nombre de compra tiene 2 nombres o 2 apellidos, ajústalo aquí para que el Excel calcule perfecto.")
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.pagesizes import LETTER
+    from reportlab.lib.colors import HexColor
 
-    c1, c2 = st.columns(2)
-    with c1:
-        nombre1 = st.text_input("Nombre 1", value=n1, key="em_nombre1")
-        nombre2 = st.text_input("Nombre 2 (opcional)", value=n2, key="em_nombre2")
-    with c2:
-        apellido1 = st.text_input("Apellido 1", value=a1, key="em_apellido1")
-        apellido2 = st.text_input("Apellido 2 (opcional)", value=a2, key="em_apellido2")
 
-    generar_pdf = st.button("✨ Generar mi PDF Premium")
+    # =========================
+    # CONFIG
+    # =========================
+    MAESTROS = {11, 22, 33, 44}
 
-    if generar_pdf:
-        # Rutas
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        EXCEL_PATH = os.path.join(BASE_DIR, "Numerologia_Eugenia.xlsx")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DICC_PATH = os.path.join(BASE_DIR, "Diccionario-1.xlsx")
 
-        if not os.path.exists(EXCEL_PATH):
-            st.error("No encuentro 'Numerologia_Eugenia.xlsx' en la misma carpeta de tu app.py.")
-            st.stop()
+    # Paleta Eugenia Mística
+    COLOR_ROJO_MISTICO = "#7A1E3A"
+    COLOR_DORADO = "#9C7A3F"
+    COLOR_TEXTO = "#2E2E2E"
+    COLOR_GRIS = "#666666"
 
-        with st.spinner("Generando tu PDF Premium... (calculando Excel)"):
-            try:
-                with tempfile.TemporaryDirectory() as tmp:
-                    xlsx_edit = os.path.join(tmp, "input_edit.xlsx")
-                    xlsx_calc = os.path.join(tmp, "recalc.xlsx")
+    # Año actual (para año personal / cuatrimestres / etc.)
+    HOY = date.today()
+    ANO_ACTUAL = HOY.year
 
-                    # 1) Copiamos tu template al temp
-                    shutil.copy2(EXCEL_PATH, xlsx_edit)
 
-                    # 2) Escribimos inputs en la hoja Tarot
-                    write_inputs_to_tarot_xlsx(
-                        src_xlsx=xlsx_edit,
-                        out_xlsx=xlsx_edit,  # sobrescribe en el mismo
-                        nombre1=nombre1,
-                        nombre2=nombre2,
-                        apellido1=apellido1,
-                        apellido2=apellido2,
-                        fecha_nac=fecha_compra
-                    )
+    # =========================
+    # UTILIDADES TEXTO / NOMBRE
+    # =========================
+    def _norm_txt(s: str) -> str:
+        s = (s or "").strip()
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+        s = s.replace("ñ", "n").replace("Ñ", "N")
+        s = re.sub(r"\s+", " ", s)
+        return s
 
-                    # 3) Recalculamos con LibreOffice
-                    recalc_with_libreoffice(xlsx_edit, xlsx_calc)
+    def _solo_letras(s: str) -> str:
+        s = _norm_txt(s).upper()
+        s = re.sub(r"[^A-Z ]", "", s)
+        return s
 
-                    # 4) Leemos SOLO 'Estudio completo' ya calculado
-                    filas_estudio = read_estudio_completo_values(xlsx_calc)
+    def separar_nombre_apellido(full_name: str):
+        """
+        Heurística:
+        - Si hay 4+ tokens: 2 primeros = nombre(s), resto = apellido(s)
+        - Si hay 3 tokens: 1 primero = nombre, resto = apellidos
+        - Si hay 2 tokens: 1 primero = nombre, 1 segundo = apellido
+        - Si hay 1 token: todo nombre
+        """
+        tokens = _solo_letras(full_name).split()
+        if len(tokens) >= 4:
+            nombre = " ".join(tokens[:2])
+            apellido = " ".join(tokens[2:])
+        elif len(tokens) == 3:
+            nombre = tokens[0]
+            apellido = " ".join(tokens[1:])
+        elif len(tokens) == 2:
+            nombre = tokens[0]
+            apellido = tokens[1]
+        else:
+            nombre = " ".join(tokens) if tokens else ""
+            apellido = ""
+        return nombre, apellido
 
-                    if not filas_estudio:
-                        st.error("‘Estudio completo’ quedó vacío después del recálculo. Revisa fórmulas del Excel.")
-                        st.stop()
 
-                    # 5) PDF bonito
-                    nombre_pdf = norm_txt(nombre_compra)
-                    pdf_bytes = build_pdf_estudio_completo(nombre_pdf, fecha_compra, filas_estudio)
+    # =========================
+    # NUMEROLOGÍA BÁSICA
+    # =========================
+    def suma_digitos(n: int) -> int:
+        return sum(int(d) for d in str(abs(int(n))))
 
-                st.success("PDF listo ✅")
+    def reducir_con_maestros(n: int) -> int:
+        """
+        Reduce a 1-9, pero detiene en 11/22/33/44.
+        """
+        n = abs(int(n))
+        while n > 9 and n not in MAESTROS:
+            n = suma_digitos(n)
+        return n
 
-                st.download_button(
-                    "📄 Descargar tu Estudio Numerológico Completo (PDF)",
-                    data=pdf_bytes,
-                    file_name=f"Estudio_Numerologico_{re.sub(r'[^A-Za-z0-9_-]+','_', nombre_compra.strip())}.pdf",
-                    mime="application/pdf"
-                )
+    def reducir_estricto_1a9(n: int) -> int:
+        """
+        Reduce SIEMPRE hasta 1-9 (ignora maestros).
+        (Esto aplica a Animal Espiritual, Tarot repetidos, Salud/Espíritu, etc. según tu nota.)
+        """
+        n = abs(int(n))
+        while n > 9:
+            n = suma_digitos(n)
+        return n
 
-            except subprocess.CalledProcessError:
-                st.error("LibreOffice falló al recalcular. Revisa que packages.txt tenga 'libreoffice' y que el deploy haya rebuild.")
-            except Exception as e:
-                st.error(f"Error generando PDF: {e}")
+    def reducir_excepcion_10_11(n: int) -> int:
+        """
+        Para Don Divino: reduce a 1-9 salvo si cae en 10 o 11.
+        """
+        n = abs(int(n))
+        while n > 11 and n not in {10, 11}:
+            n = suma_digitos(n)
+        return n
+
+    def reducir_a_dos_digitos(n: int) -> int:
+        """
+        Reduce por suma de dígitos hasta quedar en 1..99.
+        """
+        n = abs(int(n))
+        while n >= 100:
+            n = suma_digitos(n)
+        return n
+
+    def regla_tarot_78(n: int) -> int:
+        """
+        Si el resultado es < 78, se deja (puede ser 2 dígitos).
+        Si no, se reduce a 1-9 (estricto).
+        """
+        n = abs(int(n))
+        if n < 78:
+            return n
+        return reducir_estricto_1a9(n)
+
+    def suma_ano_en_digitos(year: int) -> int:
+        return suma_digitos(year)
+
+
+    # =========================
+    # VALORES LETRAS (PITAGÓRICO)
+    # =========================
+    # 1: A J S
+    # 2: B K T
+    # 3: C L U
+    # 4: D M V
+    # 5: E N W
+    # 6: F O X
+    # 7: G P Y
+    # 8: H Q Z
+    # 9: I R
+    MAPA_LETRA = {}
+    for ch in "AJS": MAPA_LETRA[ch] = 1
+    for ch in "BKT": MAPA_LETRA[ch] = 2
+    for ch in "CLU": MAPA_LETRA[ch] = 3
+    for ch in "DMV": MAPA_LETRA[ch] = 4
+    for ch in "ENW": MAPA_LETRA[ch] = 5
+    for ch in "FOX": MAPA_LETRA[ch] = 6
+    for ch in "GPY": MAPA_LETRA[ch] = 7
+    for ch in "HQZ": MAPA_LETRA[ch] = 8
+    for ch in "IR":  MAPA_LETRA[ch] = 9
+
+    VOCALES = set("AEIOU")
+
+    def valor_letra(ch: str) -> int:
+        ch = _solo_letras(ch).replace(" ", "")
+        if not ch:
+            return 0
+        return MAPA_LETRA.get(ch[0], 0)
+
+    def suma_nombre(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        return sum(MAPA_LETRA.get(ch, 0) for ch in frase)
+
+    def suma_vocales(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch in VOCALES)
+
+    def suma_consonantes(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch not in VOCALES)
+
+    def contar_letras(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        return len(frase)
+
+    def primera_vocal_valor(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        for ch in frase:
+            if ch in VOCALES:
+                return MAPA_LETRA.get(ch, 0)
+        return 0
+
+    def primera_consonante_valor(frase: str) -> int:
+        frase = _solo_letras(frase).replace(" ", "")
+        for ch in frase:
+            if ch not in VOCALES:
+                return MAPA_LETRA.get(ch, 0)
+        return 0
+
+    def moda_numeros(frase: str):
+        frase = _solo_letras(frase).replace(" ", "")
+        vals = [MAPA_LETRA.get(ch, 0) for ch in frase if MAPA_LETRA.get(ch, 0) > 0]
+        if not vals:
+            return None
+        c = Counter(vals)
+        maxf = max(c.values())
+        tops = sorted([k for k,v in c.items() if v == maxf])
+        return tops[0]  # si hay empate, el menor
+
+
+    # =========================
+    # DICCIONARIO DESDE EXCEL
+    # (cada hoja = concepto; columnas: Numero | Titulo | Texto)
+    # =========================
+    def cargar_diccionario_excel(path: str):
+        wb = load_workbook(path, data_only=True)
+        dicc = {}
+        sheet_map = {sh.strip().lower(): sh for sh in wb.sheetnames}
+
+        for sh_low, sh_real in sheet_map.items():
+            ws = wb[sh_real]
+            # asumimos encabezado en fila 1 y datos desde fila 2:
+            tabla = {}
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row:
+                    continue
+                num = row[0]
+                if num in (None, "", "None"):
+                    continue
+                try:
+                    num_int = int(num)
+                except:
+                    continue
+                titulo = (row[1] if len(row) > 1 else "") or ""
+                texto  = (row[2] if len(row) > 2 else "") or ""
+                tabla[num_int] = {
+                    "titulo": str(titulo).strip(),
+                    "texto": str(texto).strip()
+                }
+            dicc[sh_low] = tabla
+
+        return dicc
+
+    DICC = cargar_diccionario_excel(DICC_PATH)
+
+
+    # =========================
+    # BUSCAR TEXTO EN DICCIONARIO
+    # =========================
+    def dicc_get(concepto: str, numero: int):
+        """
+        Retorna dict {titulo,texto} o vacío.
+        'concepto' debe coincidir con el nombre de la hoja (en minúscula).
+        """
+        key = (concepto or "").strip().lower()
+        tabla = DICC.get(key, {})
+        return tabla.get(int(numero), {"titulo": "", "texto": ""})
+
+
+    # =========================
+    # CÁLCULOS (1..60) SEGÚN TU ARCHIVO
+    # =========================
+    def calcular_todo(nombre_full: str, fecha_nac: date):
+        nombre, apellido = separar_nombre_apellido(nombre_full)
+
+        dd = fecha_nac.day
+        mm = fecha_nac.month
+        yy = fecha_nac.year
+
+        dd_red_maestros = reducir_con_maestros(dd)
+        mm_red_maestros = reducir_con_maestros(mm)
+        yy_red_maestros = reducir_con_maestros(suma_ano_en_digitos(yy))  # año en dígitos
+
+        # 1) Misión
+        mision = reducir_con_maestros(dd)
+
+        # 2) Sendero Natal (fecha completa)
+        sendero_natal = reducir_con_maestros(dd + mm + suma_ano_en_digitos(yy))
+
+        # 3) Animal Espiritual 1 (estricto 1-9)
+        animal1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 4) Animal Espiritual 2
+        animal2_cand = reducir_estricto_1a9(dd_red_maestros)  # “suma del día reducida a un dígito”
+        animal2 = None if animal2_cand == animal1 else animal2_cand
+
+        # 5) Día de nacimiento sin reducir
+        dia_nac = dd
+
+        # 6) Primer Tarot (estricto 1-9)
+        tarot1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 7) Segundo Tarot
+        tarot2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+        tarot2 = None if tarot2_cand == tarot1 else tarot2_cand
+
+        # 8) Salud y Espíritu 1
+        salud1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 9) Salud y Espíritu 2
+        salud2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+        salud2 = None if salud2_cand == salud1 else salud2_cand
+
+        # 10) Arquetipo de Amante
+        amante = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 11) Vincular
+        vincular = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 12) Lección de Vida
+        leccion_vida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+
+        # 13) Primer Desafío = |dia reducido - mes reducido|
+        primer_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(mm))
+
+        # 14) Segundo Desafío = |dia reducido - año reducido|
+        segundo_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(suma_ano_en_digitos(yy)))
+
+        # 15) Don Divino = suma dos últimas cifras del año, reduce salvo 10/11
+        ult2 = yy % 100
+        don_divino = reducir_excepcion_10_11(suma_digitos(ult2))
+
+        # 16) Nro de Raíz = si (dia+mes+año) < 10 => no posee
+        total_raiz = dd + mm + yy
+        nro_raiz = None if total_raiz < 10 else reducir_estricto_1a9(total_raiz)
+
+        # 17) Esencia = vocales(nombre)+vocales(apellido) reduce con maestros
+        esencia = reducir_con_maestros(suma_vocales(nombre) + suma_vocales(apellido))
+
+        # 18) Imagen = consonantes(nombre)+consonantes(apellido) reduce con maestros
+        imagen = reducir_con_maestros(suma_consonantes(nombre) + suma_consonantes(apellido))
+
+        # 19) Destino = suma(nombre)+suma(apellido) reduce con maestros
+        destino = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
+
+        # 20) Nro Letras Nombre (sin espacios)
+        nro_letras = contar_letras(nombre + apellido)
+
+        # 21..25 años importantes
+        anio_imp_1 = nro_letras * 1
+        anio_imp_2 = nro_letras * 2
+        anio_imp_3 = nro_letras * 3
+        anio_imp_4 = nro_letras * 4
+        anio_imp_5 = nro_letras * 5
+
+        # 26) Características Vida = nro letras reducido a 1 dígito (estricto)
+        caract_vida = reducir_estricto_1a9(nro_letras) if nro_letras else None
+
+        # 27) Nro Hereditario = suma(apellido) reducido a 1 dígito (estricto)
+        nro_hereditario = reducir_estricto_1a9(suma_nombre(apellido)) if apellido else None
+
+        # 28) Talento = igual destino (según tu lista)
+        talento = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
+
+        # 29) Estado Espiritual = moda números del nombre+apellido
+        estado_espiritual = moda_numeros(nombre + " " + apellido)
+
+        # 30) Desafío Íntimo
+        des_intimo = abs(primera_vocal_valor(nombre) - primera_vocal_valor(apellido))
+
+        # 31) Desafío Realización
+        des_real = abs(primera_consonante_valor(nombre) - primera_consonante_valor(apellido))
+
+        # 32) Desafío Expresión = suma(des_intimo + des_real) reducido a 1 dígito (estricto)
+        des_exp = reducir_estricto_1a9(des_intimo + des_real)
+
+        # 33) Nro Expresión = suma(nombre+apellido) reduce con excepción 11/22 (solo)
+        def reducir_solo_11_22(n: int) -> int:
+            n = abs(int(n))
+            while n > 9 and n not in {11, 22}:
+                n = suma_digitos(n)
+            return n
+        nro_expresion = reducir_solo_11_22(suma_nombre(nombre) + suma_nombre(apellido))
+
+        # 34) Potencial = Sendero Natal + Destino reducido con excepción 11/22
+        potencial = reducir_solo_11_22(sendero_natal + destino)
+
+        # 35) Años 1ra etapa = 1..(36 - suma(dia+mes+año) reducida)
+        suma_fn_reducida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+        tope_1ra = 36 - suma_fn_reducida
+        if tope_1ra < 1:
+            rango_1ra = "1"
+        else:
+            rango_1ra = f"1 - {tope_1ra}"
+
+        # 36) Primera Etapa = (dia+mes) reducido con excepción 11/22
+        primera_etapa = reducir_solo_11_22(dd + mm)
+
+        # 37) Años 2da etapa
+        ini_2da = tope_1ra + 1 if tope_1ra >= 1 else 2
+        fin_2da = (tope_1ra + 10) if tope_1ra >= 1 else 11
+        rango_2da = f"{ini_2da} - {fin_2da}"
+
+        # 38) Segunda Etapa = (dia + año_dígitos) reducido con excepción 11/22
+        segunda_etapa = reducir_solo_11_22(dd + suma_ano_en_digitos(yy))
+
+        # 39) Años 3ra etapa
+        ini_3ra = fin_2da + 1
+        fin_3ra = fin_2da + 10
+        rango_3ra = f"{ini_3ra} - {fin_3ra}"
+
+        # 40) Tercera Etapa = (1ra + 2da) reducido con excepción 11/22
+        tercera_etapa = reducir_solo_11_22(primera_etapa + segunda_etapa)
+
+        # 41) Años 4ta etapa
+        ini_4ta = fin_3ra + 1
+        fin_4ta = fin_3ra + 10
+        rango_4ta = f"{ini_4ta} - {fin_4ta}"
+
+        # 42) Cuarta Etapa = (mes + año_dígitos) reducido con excepción 11/22
+        cuarta_etapa = reducir_solo_11_22(mm + suma_ano_en_digitos(yy))
+
+        # 43) Año Personal = (dia+mes+year_actual) reducido con excepción 11/22
+        ano_personal = reducir_solo_11_22(dd + mm + suma_ano_en_digitos(ANO_ACTUAL))
+
+        # 44) Dígito Edad = suma(edad + (edad-1)) reducido con excepción 11/22
+        edad = ANO_ACTUAL - yy
+        digito_edad = reducir_solo_11_22(edad + (edad - 1))
+
+        # 45) Armónico = (suma año actual + suma año nac) => reduce a 2 dígitos; si <78, dejar; si no, reducir 1-9
+        armonico_raw = suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(yy)
+        armonico_2d = reducir_a_dos_digitos(armonico_raw)
+        armonico = armonico_2d if armonico_2d < 78 else reducir_estricto_1a9(armonico_2d)
+
+        # 46) Tarot 1er Cuat = (suma año actual + suma año actual) - suma año nac  (regla <78)
+        tarot_1c = regla_tarot_78((suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(ANO_ACTUAL)) - suma_ano_en_digitos(yy))
+
+        # 47) Tarot 2do Cuat = (suma año actual + dia + mes + año_nac_dígitos) (regla <78)
+        tarot_2c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + dd + mm + suma_ano_en_digitos(yy))
+
+        # 48) Tarot 3er Cuat = (suma año actual + clave personal del día y mes) (regla <78)
+        # Interpretación: clave día+mes reducida con excepción 11/22
+        clave_dia_mes = reducir_solo_11_22(dd + mm)
+        tarot_3c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + clave_dia_mes)
+
+        # 49..60 Meses = (año personal + k) reducida con excepción 11/22
+        def mes_personal(k: int) -> int:
+            return reducir_solo_11_22(ano_personal + k)
+
+        enero = mes_personal(1)
+        febrero = mes_personal(2)
+        marzo = mes_personal(3)
+        abril = mes_personal(4)
+        mayo = mes_personal(5)
+        junio = mes_personal(6)
+        julio = mes_personal(7)
+        agosto = mes_personal(8)
+        septiembre = mes_personal(9)
+        octubre = mes_personal(1)
+        noviembre = mes_personal(2)
+        diciembre = mes_personal(3)
+
+        # Empaquetar resultados en el ORDEN EXACTO
+        # (concepto hoja_dicc, etiqueta, valor, nota_si_no_dicc)
+        items = [
+            ("mision", "Misión", mision, None),
+            ("sendero natal", "Sendero Natal", sendero_natal, None),
+            ("animal espiritual 1", "Animal Espiritual 1", animal1, None),
+            ("animal espiritual 2", "Animal Espiritual 2", animal2, "no posee segundo animal espiritual" if animal2 is None else None),
+            ("dia de nacimiento", "Día de Nacimiento", dia_nac, None),
+            ("primer tarot", "Primer Tarot", tarot1, None),
+            ("segundo tarot", "Segundo Tarot", tarot2, "no posee segundo tarot" if tarot2 is None else None),
+            ("salud y espiritu 1", "Salud y Espíritu 1", salud1, None),
+            ("salud y espiritu 2", "Salud y Espíritu 2", salud2, "No existe una segunda relación entre tu espíritu y tu salud" if salud2 is None else None),
+            ("arquetipo de amante", "Arquetipo de Amante", amante, None),
+            ("vincular", "Vincular", vincular, None),
+            ("leccion de vida", "Lección de Vida", leccion_vida, None),
+            ("primer desafio", "Primer Desafío", primer_desafio, None),
+            ("segundo desafio", "Segundo Desafío", segundo_desafio, None),
+            ("don divino", "Don Divino", don_divino, None),
+            ("nro de raiz", "Número de Raíz", nro_raiz, "No posees número de raíz" if nro_raiz is None else None),
+            ("esencia", "Esencia", esencia, None),
+            ("imagen", "Imagen", imagen, None),
+            ("destino", "Destino", destino, None),
+            ("nro letras nombre", "Nro. Letras (Nombre+Apellido)", nro_letras, None),
+            ("primer año importante de tu vida", "Primer año importante", anio_imp_1, None),
+            ("segundo año importante de tu vida", "Segundo año importante", anio_imp_2, None),
+            ("tercer año importante de tu vida", "Tercer año importante", anio_imp_3, None),
+            ("cuarto año importante de tu vida", "Cuarto año importante", anio_imp_4, None),
+            ("quinto año importante de tu vida", "Quinto año importante", anio_imp_5, None),
+            ("caracteristicas vida", "Características de Vida", caract_vida, None),
+            ("nro hereditario", "Número Hereditario", nro_hereditario, None),
+            ("talento", "Talento", talento, None),
+            ("estado espiritual", "Estado Espiritual", estado_espiritual, None),
+            ("desafio intimo", "Desafío Íntimo", des_intimo, None),
+            ("desafio de realizacion", "Desafío de Realización", des_real, None),
+            ("desafio de expresion", "Desafío de Expresión", des_exp, None),
+            ("nro de expresion", "Número de Expresión", nro_expresion, None),
+            ("potencial", "Potencial", potencial, None),
+            ("años de la primera etapa", "Años de la Primera Etapa", rango_1ra, None),
+            ("primera etapa", "Primera Etapa", primera_etapa, None),
+            ("años de la segunda etapa", "Años de la Segunda Etapa", rango_2da, None),
+            ("segunda etapa", "Segunda Etapa", segunda_etapa, None),
+            ("años de la tercera etapa", "Años de la Tercera Etapa", rango_3ra, None),
+            ("tercera etapa", "Tercera Etapa", tercera_etapa, None),
+            ("años de la cuarta etapa", "Años de la Cuarta Etapa", rango_4ta, None),
+            ("cuarta etapa", "Cuarta Etapa", cuarta_etapa, None),
+            ("año personal", "Año Personal", ano_personal, None),
+            ("digito de la edad", "Dígito de la Edad", digito_edad, None),
+            ("armonico", "Armónico", armonico, None),
+            ("tarot 1er cuat", "Tarot 1er Cuatrimestre", tarot_1c, None),
+            ("tarot 2do cuat", "Tarot 2do Cuatrimestre", tarot_2c, None),
+            ("tarot 3er cuat", "Tarot 3er Cuatrimestre", tarot_3c, None),
+            ("enero", "Enero", enero, None),
+            ("febrero", "Febrero", febrero, None),
+            ("marzo", "Marzo", marzo, None),
+            ("abril", "Abril", abril, None),
+            ("mayo", "Mayo", mayo, None),
+            ("junio", "Junio", junio, None),
+            ("julio", "Julio", julio, None),
+            ("agosto", "Agosto", agosto, None),
+            ("septiembre", "Septiembre", septiembre, None),
+            ("octubre", "Octubre", octubre, None),
+            ("noviembre", "Noviembre", noviembre, None),
+            ("diciembre", "Diciembre", diciembre, None),
+        ]
+
+        return {
+            "nombre_full": _norm_txt(nombre_full),
+            "nombre": nombre,
+            "apellido": apellido,
+            "fecha_nac": fecha_nac.strftime("%d/%m/%Y"),
+            "items": items,
+        }
+
+
+    # =========================
+    # PDF BONITO (sin tablas feas, respirable)
+    # =========================
+    def build_pdf_premium(resultado: dict) -> bytes:
+        buffer = BytesIO()
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=LETTER,
+            rightMargin=55,
+            leftMargin=55,
+            topMargin=60,
+            bottomMargin=55
+        )
+
+        styles = getSampleStyleSheet()
+
+        styles.add(ParagraphStyle(
+            name="EM_TituloPortada",
+            fontSize=26,
+            leading=32,
+            alignment=1,
+            textColor=HexColor(COLOR_ROJO_MISTICO),
+            spaceAfter=16
+        ))
+
+        styles.add(ParagraphStyle(
+            name="EM_SubPortada",
+            fontSize=13.5,
+            leading=18,
+            alignment=1,
+            textColor=HexColor(COLOR_DORADO),
+            spaceAfter=10
+        ))
+
+        styles.add(ParagraphStyle(
+            name="EM_Marca",
+            fontSize=10.5,
+            leading=14,
+            alignment=1,
+            textColor=HexColor(COLOR_GRIS),
+            spaceBefore=18
+        ))
+
+        styles.add(ParagraphStyle(
+            name="EM_TituloSeccion",
+            fontSize=15.5,
+            leading=21,
+            textColor=HexColor(COLOR_ROJO_MISTICO),
+            spaceBefore=16,
+            spaceAfter=8
+        ))
+
+        styles.add(ParagraphStyle(
+            name="EM_Valor",
+            fontSize=11.2,
+            leading=16,
+            textColor=HexColor(COLOR_TEXTO),
+            spaceAfter=8
+        ))
+
+        styles.add(ParagraphStyle(
+            name="EM_Texto",
+            fontSize=11.2,
+            leading=16.8,
+            textColor=HexColor(COLOR_TEXTO),
+            spaceAfter=10
+        ))
+
+        elementos = []
+
+        # Portada
+        elementos.append(Spacer(1, 70))
+        elementos.append(Paragraph("Lectura Numerológica Premium", styles["EM_TituloPortada"]))
+        elementos.append(Paragraph(f"Informe personalizado para<br/><b>{resultado['nombre_full']}</b>", styles["EM_SubPortada"]))
+        elementos.append(Paragraph(f"Fecha de nacimiento: <b>{resultado['fecha_nac']}</b>", styles["EM_SubPortada"]))
+        elementos.append(Spacer(1, 34))
+        elementos.append(Paragraph("Eugenia Mística · Numerología & Conciencia", styles["EM_Marca"]))
+        elementos.append(PageBreak())
+
+        # Contenido: por cada ítem, buscar diccionario por hoja y número
+        for (hoja_dicc, etiqueta, valor, nota) in resultado["items"]:
+
+            # título sección
+            elementos.append(Paragraph(etiqueta, styles["EM_TituloSeccion"]))
+
+            # valor mostrado
+            if isinstance(valor, str):
+                elementos.append(Paragraph(f"<b>Resultado:</b> {valor}", styles["EM_Valor"]))
+            elif valor is None:
+                elementos.append(Paragraph(f"<b>Resultado:</b> —", styles["EM_Valor"]))
+            else:
+                elementos.append(Paragraph(f"<b>Resultado:</b> <b>{valor}</b>", styles["EM_Valor"]))
+
+            # nota si aplica
+            if nota:
+                elementos.append(Paragraph(nota, styles["EM_Texto"]))
+                continue
+
+            # si el valor es numérico, buscamos texto largo
+            if isinstance(valor, int):
+                info = dicc_get(hoja_dicc, valor)
+                titulo = info.get("titulo", "").strip()
+                texto  = info.get("texto", "").strip()
+
+                # si hay título interno, lo ponemos discreto
+                if titulo:
+                    elementos.append(Paragraph(f"<b>{titulo}</b>", styles["EM_Texto"]))
+
+                if texto:
+                    partes = [p.strip() for p in texto.split("\n") if p.strip()]
+                    if not partes:
+                        partes = [texto]
+                    for p in partes:
+                        elementos.append(Paragraph(p, styles["EM_Texto"]))
+                else:
+                    elementos.append(Paragraph("Texto no encontrado en el diccionario para este resultado.", styles["EM_Texto"]))
+            else:
+                # rangos (strings) no buscan diccionario
+                pass
+
+            elementos.append(Spacer(1, 6))
+
+        doc.build(elementos)
+        buffer.seek(0)
+        return buffer.getvalue()
+
+
+    # =========================
+    # EJECUCIÓN + DESCARGA
+    # =========================
+    # Usa los datos del formulario premium
+    # (nombre_compra y fecha_compra vienen del bloque de desbloqueo)
+    resultado = calcular_todo(nombre_compra, fecha_compra)
+
+    pdf_bytes = build_pdf_premium(resultado)
+
+    st.download_button(
+        "📄 Descargar tu Informe Premium (PDF)",
+        data=pdf_bytes,
+        file_name=f"Lectura_Premium_{norm_txt(nombre_compra).replace(' ', '')}.pdf",
+        mime="application/pdf"
+    )
