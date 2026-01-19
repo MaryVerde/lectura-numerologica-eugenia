@@ -1,7 +1,7 @@
 import os
 import unicodedata
 import re
-from datetime import date
+from datetime import date,datetime
 from io import BytesIO
 import textwrap
 import hmac
@@ -11,8 +11,21 @@ import streamlit as st
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+
 if "premium_activo" not in st.session_state:
     st.session_state.premium_activo = False
+
+
+if st.session_state.get("premium_activo"):
+ 
+ from collections import Counter
+
+from openpyxl import load_workbook
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.colors import HexColor
+
 
 # =====================================================
 # SECRETOS (STREAMLIT CLOUD + LOCAL)
@@ -1545,30 +1558,30 @@ if confirmar_datos:
         st.error("Clave inválida. Verifica que tu nombre y fecha estén EXACTAMENTE como en tu compra.")
         st.stop()
 
-    # ✅ DESBLOQUEO
+        # ✅ DESBLOQUEO
     st.session_state.premium_activo = True
-    st.success("Versión completa desbloqueada ✅") 
+    st.success("Versión completa desbloqueada ✅")
 
-    #####################################################
+    # 1️⃣ calcular resultados
+    resultado = calcular_todo(nombre_compra, fecha_compra)
+
+    # 2️⃣ generar PDF
+    pdf_bytes = build_pdf_premium(resultado)
+
+    # 3️⃣ botón de descarga
+    st.download_button(
+        "📄 Descargar tu Informe Premium (PDF)",
+        data=pdf_bytes,
+        file_name=f"Lectura_Premium_{_norm_txt(nombre_compra)}.pdf",
+        mime="application/pdf",
+    )
+
+
+# #####################################################
 # =========================================================
 # 📘 MOTOR PREMIUM (PYTHON CALCULA TODO + DICCIONARIO EXCEL + PDF BONITO)
 # =========================================================
-
-if st.session_state.get("premium_activo"):
-
-    import os
-    import re
-    import unicodedata
-    from datetime import date, datetime
-    from io import BytesIO
-    from collections import Counter
-
-    from openpyxl import load_workbook
-
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.pagesizes import LETTER
-    from reportlab.lib.colors import HexColor
+########################################################################
 
 
     # =========================
@@ -2215,18 +2228,4 @@ def build_pdf_premium(resultado: dict) -> bytes:
     return buffer.getvalue()
    
 
-    # =========================
-    # EJECUCIÓN + DESCARGA
-    # =========================
-    # Usa los datos del formulario premium
-    # (nombre_compra y fecha_compra vienen del bloque de desbloqueo)
-    resultado = calcular_todo(nombre_compra, fecha_compra)
-
-    pdf_bytes = build_pdf_premium(resultado)
-
-    st.download_button(
-        "📄 Descargar tu Informe Premium (PDF)",
-        data=pdf_bytes,
-        file_name=f"Lectura_Premium_{_norm_txt(nombre_compra).replace(' ', '')}.pdf",
-        mime="application/pdf"
-    )
+  
