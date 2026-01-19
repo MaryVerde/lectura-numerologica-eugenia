@@ -1577,7 +1577,7 @@ if st.session_state.get("premium_activo"):
     MAESTROS = {11, 22, 33, 44}
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DICC_PATH = os.path.join(BASE_DIR, "Diccionario-1.xlsx")
+    DICC_PATH = os.path.join(BASE_DIR, "Diccionario.xlsx")
 
     # Paleta Eugenia Mística
     COLOR_ROJO_MISTICO = "#7A1E3A"
@@ -2218,3 +2218,4 @@ if st.session_state.get("premium_activo"):
         file_name=f"Lectura_Premium_{norm_txt(nombre_compra).replace(' ', '')}.pdf",
         mime="application/pdf"
     )
+
