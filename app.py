@@ -2215,7 +2215,8 @@ if st.session_state.get("premium_activo"):
     st.download_button(
         "📄 Descargar tu Informe Premium (PDF)",
         data=pdf_bytes,
-        file_name=f"Lectura_Premium_{norm_txt(nombre_compra).replace(' ', '')}.pdf",
+        file_name=f"Lectura_Premium_{_norm_txt(nombre_compra).replace(' ', '')}.pdf",
         mime="application/pdf"
     )
+
 
