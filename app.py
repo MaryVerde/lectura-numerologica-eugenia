@@ -1298,7 +1298,46 @@ if confirmar_datos:
     # Año actual (para año personal / cuatrimestres / etc.)
     HOY = date.today()
     ANO_ACTUAL = HOY.year
+def personalizar_texto(texto: str, nombre: str) -> str:
+    if not texto:
+        return texto
 
+    nombre = nombre.strip()
+
+    reglas = {
+        # Referencias impersonales → personales
+        "Las personas nacidas en": f"{nombre}, al vibrar en",
+        "Las personas que nacen en": f"{nombre}, al vibrar en",
+        "Estas personas": "Tú",
+        "Estas almas": "Tu alma",
+        "Estos individuos": "Tú",
+        "Ellos": "Tú",
+        "Ellas": "Tú",
+
+        # Vida / camino
+        "Su vida": "Tu vida",
+        "Su camino": "Tu camino",
+        "Su misión": "Tu misión",
+        "Su energía": "Tu energía",
+        "Su vibración": "Tu vibración",
+
+        # Conducta
+        "tienden a": "tiendes a",
+        "suelen": "sueles",
+        "pueden": "puedes",
+        "deben": "debes",
+
+        # Lenguaje distante → cercano
+        "Se observa que": "La vida te muestra que",
+        "Esto indica que": "Esto te indica que",
+        "Esto sugiere que": "Esto te sugiere que",
+        "Es importante que": "Es importante para ti que",
+    }
+
+    for origen, destino in reglas.items():
+        texto = texto.replace(origen, destino)
+
+    return texto
 
     # =========================
     # UTILIDADES TEXTO / NOMBRE
@@ -1903,10 +1942,13 @@ def build_pdf_premium(resultado: dict) -> bytes:
 
         # Texto largo desde diccionario
         if isinstance(valor, int):
-            info = dicc_get(hoja_dicc, valor)
+            info = hoja_dicc.get(valor, {})
             texto = info.get("texto", "").strip()
+            texto = personalizar_texto(texto, resultado["nombre_full"])
 
             if texto:
+                intro = f"{resultado['nombre_full']}, esta lectura se manifiesta como un espejo de tu proceso interno.\n\n"
+                texto = intro + texto
                 partes = [p.strip() for p in texto.split("\n") if p.strip()]
                 for p in partes:
                     elementos.append(
