@@ -1304,11 +1304,8 @@ def personalizar_texto(texto: str, nombre: str) -> str:
     nombre = (nombre or "").strip()
     t = (texto or "").strip()
 
-    # -----------------------------
-    # Selector determinista (misma persona + mismo texto => misma variante)
-    # -----------------------------
+    # 1. Generador de semilla para que siempre elija la misma variante para la misma persona
     try:
-        import hashlib
         seed = int(hashlib.md5((nombre + "||" + t[:80]).encode("utf-8")).hexdigest()[:8], 16)
     except Exception:
         seed = 0
@@ -1319,82 +1316,52 @@ def personalizar_texto(texto: str, nombre: str) -> str:
         idx = (seed + k) % len(opciones)
         return opciones[idx]
 
-    # -----------------------------
-    # 1) Tus reglas base (las mantengo)
-    # -----------------------------
+    # 2. Reglas de personalización de Eugenia. místico
     reglas = {
-        # Referencias impersonales -> personales
         "Las personas nacidas en": f"{nombre}, al vibrar en",
         "Las personas que nacen en": f"{nombre}, al vibrar en",
         "Estas personas": "Tú",
         "Estos individuos": "Tú",
         "Ellos": "Tú",
         "Ellas": "Tú",
-
-        # Vida / camino (mantén las que ya tienes)
         "Su vida": "Tu vida",
         "Su camino": "Tu camino",
         "Su misión": "Tu misión",
     }
 
     for origen, destino in reglas.items():
-        t = t.replace(origen, destino)
+        # Usamos re.IGNORECASE para que cambie la palabra sin importar si es mayúscula o minúscula
+        t = re.sub(re.escape(origen), destino, t, flags=re.IGNORECASE)
 
-    # -----------------------------
-    # 2) Variación controlada de frases repetidas (SIN inventar tema)
-    # -----------------------------
-    # "te invita a" es la fuente #1 de repetición: lo rotamos por sinónimos suaves
-    altern_te_invita = [
-        "te impulsa a",
-        "te mueve a",
-        "te orienta a",
-        "te llama a",
-        "te propone",
-        "te conduce a",
-    ]
-    # Para "despertar" (misma idea, menos repetición)
-    altern_despertar = [
-        "tomar conciencia",
-        "abrir los ojos",
-        "reconocer lo que ya sabes",
-        "conectar con tu verdad",
-        "volver a ti",
-    ]
+    # 3. Variaciones para evitar repeticiones
+    altern_te_invita = ["te impulsa a", "te mueve a", "te orienta a", "te llama a", "te propone", "te conduce a"]
+    altern_despertar = ["tomar conciencia", "abrir los ojos", "reconocer lo que ya sabes", "conectar con tu verdad", "volver a ti"]
 
-    # Reemplazo simple de algunas frases típicas
     t = t.replace("te invita a", pick(altern_te_invita, 1))
     t = t.replace("Te invita a", pick([s.capitalize() for s in altern_te_invita], 2))
     t = t.replace("despertar", pick(altern_despertar, 3))
 
-    # -----------------------------
-    # 3) Quitar repeticiones cercanas (ej: "te invita a..., te invita a...")
-    # -----------------------------
-    # Si aparece "te invita a" repetido en el mismo párrafo, cambia la segunda ocurrencia
-    # (esto evita el efecto metralleta)
+    # 4. Función interna para evitar repeticiones seguidas
     def _anti_repe(m):
-        # alterna según el contador del match
         return pick(altern_te_invita, 10)
 
-    # Cambia TODAS las ocurrencias extra de "te invita a" por variantes
     t = re.sub(r"\bte invita a\b", _anti_repe, t, flags=re.IGNORECASE)
 
-    # -----------------------------
-    # 4) Micro-cierre para que no termine “en el aire” (opcional, sutil)
-    # -----------------------------
-    # Solo agrega si el texto no trae cierre y si es relativamente largo
+    # 5. Cierre opcional para informes largos
     cierres = [
         "Llévalo a lo concreto: una decisión, un límite o un hábito nuevo esta semana.",
         "La clave está en una acción pequeña pero constante; ahí se ve el cambio real.",
         "Si lo aplicas en lo cotidiano, se convierte en poder personal y claridad.",
     ]
+    
     if len(t) > 280 and not re.search(r"[.!?]\s*$", t):
         t = t.rstrip() + "."
+    
     if len(t) > 350 and ("te invita" in t.lower() or "te impulsa" in t.lower()):
-        # cierre suave (no siempre)
         if seed % 3 == 0:
             t = t.rstrip() + " " + pick(cierres, 20)
 
-    # Limpieza de espacios
+    # Limpieza de espacios extra
     t = re.sub(r"\s+", " ", t).strip()
 
     return t
