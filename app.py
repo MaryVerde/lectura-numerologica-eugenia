@@ -208,7 +208,7 @@ def pinaculo_piramide(fecha: date) -> dict:
 LECTURA_RESUMIDA = {
     1:  "Te invita a marca un renacer personal. La vida te coloca frente a decisiones que no pueden seguir postergándose. Se activa el fuego del inicio, la valentía de decir “sí” a lo nuevo y “no” a lo que ya no vibra contigo. Todo te empuja a tomar liderazgo sobre tu propia historia. No esperes señales externas: la señal eres tú. Lo que comiences ahora define el tono de los próximos años. Este es un año para actuar con claridad, coraje y propósito. La energía te respalda cuando confías en tu impulso interior.",
     2:  "Te invita a afinar la sensibilidad y profundizar los vínculos. La vida te enseña que no todo se logra empujando: algunas cosas florecen cuando aprendes a escuchar. Se activa la energía de la cooperación, la paciencia y la armonía. Es un ciclo para sanar relaciones, equilibrar emociones y reconocer que la verdadera fortaleza también sabe esperar. El crecimiento llega cuando honras los ritmos naturales y eliges la paz sin perderte a ti.",
-    3:  "Te invita a despierta tu voz auténtica y tu creatividad. La energía te empuja a expresarte, a mostrarte y a disfrutar más del proceso de vivir. Se abre un ciclo donde la alegría no es superficial, sino medicina. Todo lo que comunicas tiene impacto, por eso es importante hablar desde la verdad. Es un año para crear, compartir, conectar y permitir que tu luz sea vista. Cuando te permites ser tú, la vida responde con expansión.",
+    3:  "Te invita a desperta tu voz auténtica y tu creatividad. La energía te empuja a expresarte, a mostrarte y a disfrutar más del proceso de vivir. Se abre un ciclo donde la alegría no es superficial, sino medicina. Todo lo que comunicas tiene impacto, por eso es importante hablar desde la verdad. Es un año para crear, compartir, conectar y permitir que tu luz sea vista. Cuando te permites ser tú, la vida responde con expansión.",
     4:  "Te invita a tener orden, estructura y compromiso contigo misma. No es un ciclo de velocidad, sino de construcción consciente. La energía te invita a poner bases sólidas para el futuro, incluso si eso requiere disciplina y constancia. Cada paso cuenta, aunque no lo veas de inmediato. Es un año para materializar con paciencia, organizar prioridades y fortalecer lo que realmente importa. Lo que edificas ahora tiene raíces profundas.",
     5:  "Te invita a trae cambio, movimiento y liberación. La vida sacude lo que estaba estancado y te invita a salir de lo conocido. Se activa una energía inquieta que pide experiencias nuevas, decisiones valientes y flexibilidad. Resistirse solo genera tensión: fluir abre caminos inesperados. Es un año para reinventarte, viajar interna o externamente, y recordar que la libertad también es una elección consciente.",
     6:  "Te invita a poner foco está en el corazón, el cuidado y la responsabilidad emocional. La energía te lleva a revisar vínculos, compromisos y la forma en que das y recibes amor. Es un ciclo de sanación afectiva, donde se te pide equilibrio entre cuidar a otros y cuidarte a ti. El hogar interno se vuelve prioridad. Cuando eliges desde el amor consciente, todo se ordena con mayor armonía.",
@@ -1296,46 +1296,108 @@ COLOR_GRIS = "#666666"
     # Año actual (para año personal / cuatrimestres / etc.)
 HOY = date.today()
 ANO_ACTUAL = HOY.year
+
 def personalizar_texto(texto: str, nombre: str) -> str:
     if not texto:
         return texto
 
-    nombre = nombre.strip()
+    nombre = (nombre or "").strip()
+    t = (texto or "").strip()
 
+    # -----------------------------
+    # Selector determinista (misma persona + mismo texto => misma variante)
+    # -----------------------------
+    try:
+        import hashlib
+        seed = int(hashlib.md5((nombre + "||" + t[:80]).encode("utf-8")).hexdigest()[:8], 16)
+    except Exception:
+        seed = 0
+
+    def pick(opciones, k=0):
+        if not opciones:
+            return ""
+        idx = (seed + k) % len(opciones)
+        return opciones[idx]
+
+    # -----------------------------
+    # 1) Tus reglas base (las mantengo)
+    # -----------------------------
     reglas = {
-        # Referencias impersonales → personales
+        # Referencias impersonales -> personales
         "Las personas nacidas en": f"{nombre}, al vibrar en",
         "Las personas que nacen en": f"{nombre}, al vibrar en",
         "Estas personas": "Tú",
-        "Estas almas": "Tu alma",
         "Estos individuos": "Tú",
         "Ellos": "Tú",
         "Ellas": "Tú",
 
-        # Vida / camino
+        # Vida / camino (mantén las que ya tienes)
         "Su vida": "Tu vida",
         "Su camino": "Tu camino",
         "Su misión": "Tu misión",
-        "Su energía": "Tu energía",
-        "Su vibración": "Tu vibración",
-
-        # Conducta
-        "tienden a": "tiendes a",
-        "suelen": "sueles",
-        "pueden": "puedes",
-        "deben": "debes",
-
-        # Lenguaje distante → cercano
-        "Se observa que": "La vida te muestra que",
-        "Esto indica que": "Esto te indica que",
-        "Esto sugiere que": "Esto te sugiere que",
-        "Es importante que": "Es importante para ti que",
     }
 
     for origen, destino in reglas.items():
-        texto = texto.replace(origen, destino)
+        t = t.replace(origen, destino)
 
-    return texto
+    # -----------------------------
+    # 2) Variación controlada de frases repetidas (SIN inventar tema)
+    # -----------------------------
+    # "te invita a" es la fuente #1 de repetición: lo rotamos por sinónimos suaves
+    altern_te_invita = [
+        "te impulsa a",
+        "te mueve a",
+        "te orienta a",
+        "te llama a",
+        "te propone",
+        "te conduce a",
+    ]
+    # Para "despertar" (misma idea, menos repetición)
+    altern_despertar = [
+        "tomar conciencia",
+        "abrir los ojos",
+        "reconocer lo que ya sabes",
+        "conectar con tu verdad",
+        "volver a ti",
+    ]
+
+    # Reemplazo simple de algunas frases típicas
+    t = t.replace("te invita a", pick(altern_te_invita, 1))
+    t = t.replace("Te invita a", pick([s.capitalize() for s in altern_te_invita], 2))
+    t = t.replace("despertar", pick(altern_despertar, 3))
+
+    # -----------------------------
+    # 3) Quitar repeticiones cercanas (ej: "te invita a..., te invita a...")
+    # -----------------------------
+    # Si aparece "te invita a" repetido en el mismo párrafo, cambia la segunda ocurrencia
+    # (esto evita el efecto metralleta)
+    def _anti_repe(m):
+        # alterna según el contador del match
+        return pick(altern_te_invita, 10)
+
+    # Cambia TODAS las ocurrencias extra de "te invita a" por variantes
+    t = re.sub(r"\bte invita a\b", _anti_repe, t, flags=re.IGNORECASE)
+
+    # -----------------------------
+    # 4) Micro-cierre para que no termine “en el aire” (opcional, sutil)
+    # -----------------------------
+    # Solo agrega si el texto no trae cierre y si es relativamente largo
+    cierres = [
+        "Llévalo a lo concreto: una decisión, un límite o un hábito nuevo esta semana.",
+        "La clave está en una acción pequeña pero constante; ahí se ve el cambio real.",
+        "Si lo aplicas en lo cotidiano, se convierte en poder personal y claridad.",
+    ]
+    if len(t) > 280 and not re.search(r"[.!?]\s*$", t):
+        t = t.rstrip() + "."
+    if len(t) > 350 and ("te invita" in t.lower() or "te impulsa" in t.lower()):
+        # cierre suave (no siempre)
+        if seed % 3 == 0:
+            t = t.rstrip() + " " + pick(cierres, 20)
+
+    # Limpieza de espacios
+    t = re.sub(r"\s+", " ", t).strip()
+
+    return t
 
     # =========================
     # UTILIDADES TEXTO / NOMBRE
