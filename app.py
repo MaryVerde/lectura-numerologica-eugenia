@@ -20,6 +20,8 @@ from reportlab.lib.colors import HexColor
 if "premium_activo" not in st.session_state:
     st.session_state.premium_activo = False
 
+
+
 # =====================================================
 # SECRETOS (STREAMLIT CLOUD + LOCAL)
 # =====================================================
@@ -208,7 +210,7 @@ def pinaculo_piramide(fecha: date) -> dict:
 LECTURA_RESUMIDA = {
     1:  "Te invita a marca un renacer personal. La vida te coloca frente a decisiones que no pueden seguir postergándose. Se activa el fuego del inicio, la valentía de decir “sí” a lo nuevo y “no” a lo que ya no vibra contigo. Todo te empuja a tomar liderazgo sobre tu propia historia. No esperes señales externas: la señal eres tú. Lo que comiences ahora define el tono de los próximos años. Este es un año para actuar con claridad, coraje y propósito. La energía te respalda cuando confías en tu impulso interior.",
     2:  "Te invita a afinar la sensibilidad y profundizar los vínculos. La vida te enseña que no todo se logra empujando: algunas cosas florecen cuando aprendes a escuchar. Se activa la energía de la cooperación, la paciencia y la armonía. Es un ciclo para sanar relaciones, equilibrar emociones y reconocer que la verdadera fortaleza también sabe esperar. El crecimiento llega cuando honras los ritmos naturales y eliges la paz sin perderte a ti.",
-    3:  "Te invita a desperta tu voz auténtica y tu creatividad. La energía te empuja a expresarte, a mostrarte y a disfrutar más del proceso de vivir. Se abre un ciclo donde la alegría no es superficial, sino medicina. Todo lo que comunicas tiene impacto, por eso es importante hablar desde la verdad. Es un año para crear, compartir, conectar y permitir que tu luz sea vista. Cuando te permites ser tú, la vida responde con expansión.",
+    3:  "Te invita a despierta tu voz auténtica y tu creatividad. La energía te empuja a expresarte, a mostrarte y a disfrutar más del proceso de vivir. Se abre un ciclo donde la alegría no es superficial, sino medicina. Todo lo que comunicas tiene impacto, por eso es importante hablar desde la verdad. Es un año para crear, compartir, conectar y permitir que tu luz sea vista. Cuando te permites ser tú, la vida responde con expansión.",
     4:  "Te invita a tener orden, estructura y compromiso contigo misma. No es un ciclo de velocidad, sino de construcción consciente. La energía te invita a poner bases sólidas para el futuro, incluso si eso requiere disciplina y constancia. Cada paso cuenta, aunque no lo veas de inmediato. Es un año para materializar con paciencia, organizar prioridades y fortalecer lo que realmente importa. Lo que edificas ahora tiene raíces profundas.",
     5:  "Te invita a trae cambio, movimiento y liberación. La vida sacude lo que estaba estancado y te invita a salir de lo conocido. Se activa una energía inquieta que pide experiencias nuevas, decisiones valientes y flexibilidad. Resistirse solo genera tensión: fluir abre caminos inesperados. Es un año para reinventarte, viajar interna o externamente, y recordar que la libertad también es una elección consciente.",
     6:  "Te invita a poner foco está en el corazón, el cuidado y la responsabilidad emocional. La energía te lleva a revisar vínculos, compromisos y la forma en que das y recibes amor. Es un ciclo de sanación afectiva, donde se te pide equilibrio entre cuidar a otros y cuidarte a ti. El hogar interno se vuelve prioridad. Cuando eliges desde el amor consciente, todo se ordena con mayor armonía.",
@@ -1279,202 +1281,173 @@ if confirmar_datos:
 ########################################################################
 
 
-    # =========================
-    # CONFIG
-    # =========================
+# =========================
+# CONFIG
+# =========================
 MAESTROS = {11, 22, 33, 44}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DICC_PATH = os.path.join(BASE_DIR, "Diccionario.xlsx")
 
-    # Paleta Eugenia Mística
+# Paleta Eugenia Mística
 COLOR_ROJO_MISTICO = "#7A1E3A"
 COLOR_DORADO = "#9C7A3F"
 COLOR_TEXTO = "#2E2E2E"
 COLOR_GRIS = "#666666"
 
-    # Año actual (para año personal / cuatrimestres / etc.)
+# Año actual (para año personal / cuatrimestres / etc.)
 HOY = date.today()
 ANO_ACTUAL = HOY.year
-
 def personalizar_texto(texto: str, nombre: str) -> str:
     if not texto:
         return texto
 
-    nombre = (nombre or "").strip()
-    t = (texto or "").strip()
+    nombre = nombre.strip()
 
-    # 1. Generador de semilla para que siempre elija la misma variante para la misma persona
-    try:
-        seed = int(hashlib.md5((nombre + "||" + t[:80]).encode("utf-8")).hexdigest()[:8], 16)
-    except Exception:
-        seed = 0
-
-    def pick(opciones, k=0):
-        if not opciones:
-            return ""
-        idx = (seed + k) % len(opciones)
-        return opciones[idx]
-
-    # 2. Reglas de personalización de Eugenia. místico
     reglas = {
+        # Referencias impersonales → personales
         "Las personas nacidas en": f"{nombre}, al vibrar en",
         "Las personas que nacen en": f"{nombre}, al vibrar en",
         "Estas personas": "Tú",
+        "Estas almas": "Tu alma",
         "Estos individuos": "Tú",
         "Ellos": "Tú",
         "Ellas": "Tú",
+
+        # Vida / camino
         "Su vida": "Tu vida",
         "Su camino": "Tu camino",
         "Su misión": "Tu misión",
+        "Su energía": "Tu energía",
+        "Su vibración": "Tu vibración",
+
+        # Conducta
+        "tienden a": "tiendes a",
+        "suelen": "sueles",
+        "pueden": "puedes",
+        "deben": "debes",
+
+        # Lenguaje distante → cercano
+        "Se observa que": "La vida te muestra que",
+        "Esto indica que": "Esto te indica que",
+        "Esto sugiere que": "Esto te sugiere que",
+        "Es importante que": "Es importante para ti que",
     }
 
     for origen, destino in reglas.items():
-        # Usamos re.IGNORECASE para que cambie la palabra sin importar si es mayúscula o minúscula
-        t = re.sub(re.escape(origen), destino, t, flags=re.IGNORECASE)
+        texto = texto.replace(origen, destino)
 
-    # 3. Variaciones para evitar repeticiones
-    altern_te_invita = ["te impulsa a", "te mueve a", "te orienta a", "te llama a", "te propone", "te conduce a"]
-    altern_despertar = ["tomar conciencia", "abrir los ojos", "reconocer lo que ya sabes", "conectar con tu verdad", "volver a ti"]
+    return texto
 
-    t = t.replace("te invita a", pick(altern_te_invita, 1))
-    t = t.replace("Te invita a", pick([s.capitalize() for s in altern_te_invita], 2))
-    t = t.replace("despertar", pick(altern_despertar, 3))
-
-    # 4. Función interna para evitar repeticiones seguidas
-    def _anti_repe(m):
-        return pick(altern_te_invita, 10)
-
-    t = re.sub(r"\bte invita a\b", _anti_repe, t, flags=re.IGNORECASE)
-
-    # 5. Cierre opcional para informes largos
-    cierres = [
-        "Llévalo a lo concreto: una decisión, un límite o un hábito nuevo esta semana.",
-        "La clave está en una acción pequeña pero constante; ahí se ve el cambio real.",
-        "Si lo aplicas en lo cotidiano, se convierte en poder personal y claridad.",
-    ]
-    
-    if len(t) > 280 and not re.search(r"[.!?]\s*$", t):
-        t = t.rstrip() + "."
-    
-    if len(t) > 350 and ("te invita" in t.lower() or "te impulsa" in t.lower()):
-        if seed % 3 == 0:
-            t = t.rstrip() + " " + pick(cierres, 20)
-
-    # Limpieza de espacios extra
-    t = re.sub(r"\s+", " ", t).strip()
-
-    return t
-
-    # =========================
-    # UTILIDADES TEXTO / NOMBRE
-    # =========================
+# =========================
+# UTILIDADES TEXTO / NOMBRE
+# =========================
 def _norm_txt(s: str) -> str:
-        s = (s or "").strip()
-        s = unicodedata.normalize("NFD", s)
-        s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
-        s = s.replace("ñ", "n").replace("Ñ", "N")
-        s = re.sub(r"\s+", " ", s)
-        return s
-    
+    s = (s or "").strip()
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+    s = s.replace("ñ", "n").replace("Ñ", "N")
+    s = re.sub(r"\s+", " ", s)
+    return s
+
 def _solo_letras(s: str) -> str:
-        s = _norm_txt(s).upper()
-        s = re.sub(r"[^A-Z ]", "", s)
-        return s
+    s = _norm_txt(s).upper()
+    s = re.sub(r"[^A-Z ]", "", s)
+    return s
 
 def separar_nombre_apellido(full_name: str):
-        """
-        Heurística:
-        - Si hay 4+ tokens: 2 primeros = nombre(s), resto = apellido(s)
-        - Si hay 3 tokens: 1 primero = nombre, resto = apellidos
-        - Si hay 2 tokens: 1 primero = nombre, 1 segundo = apellido
-        - Si hay 1 token: todo nombre
-        """
-        tokens = _solo_letras(full_name).split()
-        if len(tokens) >= 4:
-            nombre = " ".join(tokens[:2])
-            apellido = " ".join(tokens[2:])
-        elif len(tokens) == 3:
-            nombre = tokens[0]
-            apellido = " ".join(tokens[1:])
-        elif len(tokens) == 2:
-            nombre = tokens[0]
-            apellido = tokens[1]
-        else:
-            nombre = " ".join(tokens) if tokens else ""
-            apellido = ""
-        return nombre, apellido
+    """
+    Heurística:
+    - Si hay 4+ tokens: 2 primeros = nombre(s), resto = apellido(s)
+    - Si hay 3 tokens: 1 primero = nombre, resto = apellidos
+    - Si hay 2 tokens: 1 primero = nombre, 1 segundo = apellido
+    - Si hay 1 token: todo nombre
+    """
+    tokens = _solo_letras(full_name).split()
+    if len(tokens) >= 4:
+        nombre = " ".join(tokens[:2])
+        apellido = " ".join(tokens[2:])
+    elif len(tokens) == 3:
+        nombre = tokens[0]
+        apellido = " ".join(tokens[1:])
+    elif len(tokens) == 2:
+        nombre = tokens[0]
+        apellido = tokens[1]
+    else:
+        nombre = " ".join(tokens) if tokens else ""
+        apellido = ""
+    return nombre, apellido
 
 
-    # =========================
-    # NUMEROLOGÍA BÁSICA
-    # =========================
+# =========================
+# NUMEROLOGÍA BÁSICA
+# =========================
 def suma_digitos(n: int) -> int:
-        return sum(int(d) for d in str(abs(int(n))))
+    return sum(int(d) for d in str(abs(int(n))))
 
 def reducir_con_maestros(n: int) -> int:
-        """
-        Reduce a 1-9, pero detiene en 11/22/33/44.
-        """
-        n = abs(int(n))
-        while n > 9 and n not in MAESTROS:
-            n = suma_digitos(n)
-        return n
+    """
+    Reduce a 1-9, pero detiene en 11/22/33/44.
+    """
+    n = abs(int(n))
+    while n > 9 and n not in MAESTROS:
+        n = suma_digitos(n)
+    return n
 
 def reducir_estricto_1a9(n: int) -> int:
-        """
-        Reduce SIEMPRE hasta 1-9 (ignora maestros).
-        (Esto aplica a Animal Espiritual, Tarot repetidos, Salud/Espíritu, etc. según tu nota.)
-        """
-        n = abs(int(n))
-        while n > 9:
-            n = suma_digitos(n)
-        return n
+    """
+    Reduce SIEMPRE hasta 1-9 (ignora maestros).
+    (Esto aplica a Animal Espiritual, Tarot repetidos, Salud/Espíritu, etc. según tu nota.)
+    """
+    n = abs(int(n))
+    while n > 9:
+        n = suma_digitos(n)
+    return n
 
 def reducir_excepcion_10_11(n: int) -> int:
-        """
-        Para Don Divino: reduce a 1-9 salvo si cae en 10 o 11.
-        """
-        n = abs(int(n))
-        while n > 11 and n not in {10, 11}:
-            n = suma_digitos(n)
-        return n
+    """
+    Para Don Divino: reduce a 1-9 salvo si cae en 10 o 11.
+    """
+    n = abs(int(n))
+    while n > 11 and n not in {10, 11}:
+        n = suma_digitos(n)
+    return n
 
 def reducir_a_dos_digitos(n: int) -> int:
-        """
-        Reduce por suma de dígitos hasta quedar en 1..99.
-        """
-        n = abs(int(n))
-        while n >= 100:
-            n = suma_digitos(n)
-        return n
+    """
+    Reduce por suma de dígitos hasta quedar en 1..99.
+    """
+    n = abs(int(n))
+    while n >= 100:
+        n = suma_digitos(n)
+    return n
 
 def regla_tarot_78(n: int) -> int:
-        """
-        Si el resultado es < 78, se deja (puede ser 2 dígitos).
-        Si no, se reduce a 1-9 (estricto).
-        """
-        n = abs(int(n))
-        if n < 78:
-            return n
-        return reducir_estricto_1a9(n)
+    """
+    Si el resultado es < 78, se deja (puede ser 2 dígitos).
+    Si no, se reduce a 1-9 (estricto).
+    """
+    n = abs(int(n))
+    if n < 78:
+        return n
+    return reducir_estricto_1a9(n)
 
 def suma_ano_en_digitos(year: int) -> int:
-        return suma_digitos(year)
+    return suma_digitos(year)
 
 
-    # =========================
-    # VALORES LETRAS (PITAGÓRICO)
-    # =========================
-    # 1: A J S
-    # 2: B K T
-    # 3: C L U
-    # 4: D M V
-    # 5: E N W
-    # 6: F O X
-    # 7: G P Y
-    # 8: H Q Z
-    # 9: I R
+# =========================
+# VALORES LETRAS (PITAGÓRICO)
+# =========================
+# 1: A J S
+# 2: B K T
+# 3: C L U
+# 4: D M V
+# 5: E N W
+# 6: F O X
+# 7: G P Y
+# 8: H Q Z
+# 9: I R
 MAPA_LETRA = {}
 for ch in "AJS": MAPA_LETRA[ch] = 1
 for ch in "BKT": MAPA_LETRA[ch] = 2
@@ -1489,365 +1462,366 @@ for ch in "IR":  MAPA_LETRA[ch] = 9
 VOCALES = set("AEIOU")
 
 def valor_letra(ch: str) -> int:
-        ch = _solo_letras(ch).replace(" ", "")
-        if not ch:
-            return 0
-        return MAPA_LETRA.get(ch[0], 0)
+    ch = _solo_letras(ch).replace(" ", "")
+    if not ch:
+        return 0
+    return MAPA_LETRA.get(ch[0], 0)
 
 def suma_nombre(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        return sum(MAPA_LETRA.get(ch, 0) for ch in frase)
+    frase = _solo_letras(frase).replace(" ", "")
+    return sum(MAPA_LETRA.get(ch, 0) for ch in frase)
 
 def suma_vocales(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch in VOCALES)
+    frase = _solo_letras(frase).replace(" ", "")
+    return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch in VOCALES)
 
 def suma_consonantes(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch not in VOCALES)
+    frase = _solo_letras(frase).replace(" ", "")
+    return sum(MAPA_LETRA.get(ch, 0) for ch in frase if ch not in VOCALES)
 
 def contar_letras(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        return len(frase)
+    frase = _solo_letras(frase).replace(" ", "")
+    return len(frase)
 
 def primera_vocal_valor(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        for ch in frase:
-            if ch in VOCALES:
-                return MAPA_LETRA.get(ch, 0)
-        return 0
+    frase = _solo_letras(frase).replace(" ", "")
+    for ch in frase:
+        if ch in VOCALES:
+            return MAPA_LETRA.get(ch, 0)
+    return 0
 
 def primera_consonante_valor(frase: str) -> int:
-        frase = _solo_letras(frase).replace(" ", "")
-        for ch in frase:
-            if ch not in VOCALES:
-                return MAPA_LETRA.get(ch, 0)
-        return 0
+    frase = _solo_letras(frase).replace(" ", "")
+    for ch in frase:
+        if ch not in VOCALES:
+            return MAPA_LETRA.get(ch, 0)
+    return 0
 
 def moda_numeros(frase: str):
-        frase = _solo_letras(frase).replace(" ", "")
-        vals = [MAPA_LETRA.get(ch, 0) for ch in frase if MAPA_LETRA.get(ch, 0) > 0]
-        if not vals:
-            return None
-        c = Counter(vals)
-        maxf = max(c.values())
-        tops = sorted([k for k,v in c.items() if v == maxf])
-        return tops[0]  # si hay empate, el menor
+    frase = _solo_letras(frase).replace(" ", "")
+    vals = [MAPA_LETRA.get(ch, 0) for ch in frase if MAPA_LETRA.get(ch, 0) > 0]
+    if not vals:
+        return None
+    c = Counter(vals)
+    maxf = max(c.values())
+    tops = sorted([k for k,v in c.items() if v == maxf])
+    return tops[0]  # si hay empate, el menor
 
 
-    # =========================
-    # DICCIONARIO DESDE EXCEL
-    # (cada hoja = concepto; columnas: Numero | Titulo | Texto)
-    # =========================
+# =========================
+# DICCIONARIO DESDE EXCEL
+# (cada hoja = concepto; columnas: Numero | Titulo | Texto)
+# =========================
 def cargar_diccionario_excel(path: str):
-        wb = load_workbook(path, data_only=True)
-        dicc = {}
-        sheet_map = {sh.strip().lower(): sh for sh in wb.sheetnames}
+    wb = load_workbook(path, data_only=True)
+    dicc = {}
+    sheet_map = {sh.strip().lower(): sh for sh in wb.sheetnames}
 
-        for sh_low, sh_real in sheet_map.items():
-            ws = wb[sh_real]
-            # asumimos encabezado en fila 1 y datos desde fila 2:
-            tabla = {}
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if not row:
-                    continue
-                num = row[0]
-                if num in (None, "", "None"):
-                    continue
-                try:
-                    num_int = int(num)
-                except:
-                    continue
-                titulo = (row[1] if len(row) > 1 else "") or ""
-                texto  = (row[2] if len(row) > 2 else "") or ""
-                tabla[num_int] = {
-                    "titulo": str(titulo).strip(),
-                    "texto": str(texto).strip()
-                }
-            dicc[sh_low] = tabla
+    for sh_low, sh_real in sheet_map.items():
+        ws = wb[sh_real]
+        # asumimos encabezado en fila 1 y datos desde fila 2:
+        tabla = {}
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not row:
+                continue
+            num = row[0]
+            if num in (None, "", "None"):
+                continue
+            try:
+                num_int = int(num)
+            except:
+                continue
+            titulo = (row[1] if len(row) > 1 else "") or ""
+            texto  = (row[2] if len(row) > 2 else "") or ""
+            tabla[num_int] = {
+                "titulo": str(titulo).strip(),
+                "texto": str(texto).strip()
+            }
+        dicc[sh_low] = tabla
 
-        return dicc
+    return dicc
 
 DICC = cargar_diccionario_excel(DICC_PATH)
 
 
-    # =========================
-    # BUSCAR TEXTO EN DICCIONARIO
-    # =========================
+# =========================
+# BUSCAR TEXTO EN DICCIONARIO
+# =========================
 def dicc_get(concepto: str, numero: int):
-        """
-        Retorna dict {titulo,texto} o vacío.
-        'concepto' debe coincidir con el nombre de la hoja (en minúscula).
-        """
-        key = (concepto or "").strip().lower()
-        tabla = DICC.get(key, {})
-        return tabla.get(int(numero), {"titulo": "", "texto": ""})
+    """
+    Retorna dict {titulo,texto} o vacío.
+    'concepto' debe coincidir con el nombre de la hoja (en minúscula).
+    """
+    key = (concepto or "").strip().lower()
+    tabla = DICC.get(key, {})
+    return tabla.get(int(numero), {"titulo": "", "texto": ""})
 
 
-    # =========================
-    # CÁLCULOS (1..60) SEGÚN TU ARCHIVO
-    # =========================
+# =========================
+# CÁLCULOS (1..60) SEGÚN TU ARCHIVO
+# =========================
 def calcular_todo(nombre_full: str, fecha_nac: date):
-        nombre, apellido = separar_nombre_apellido(nombre_full)
+    nombre, apellido = separar_nombre_apellido(nombre_full)
 
-        dd = fecha_nac.day
-        mm = fecha_nac.month
-        yy = fecha_nac.year
+    dd = fecha_nac.day
+    mm = fecha_nac.month
+    yy = fecha_nac.year
 
-        dd_red_maestros = reducir_con_maestros(dd)
-        mm_red_maestros = reducir_con_maestros(mm)
-        yy_red_maestros = reducir_con_maestros(suma_ano_en_digitos(yy))  # año en dígitos
+    dd_red_maestros = reducir_con_maestros(dd)
+    mm_red_maestros = reducir_con_maestros(mm)
+    yy_red_maestros = reducir_con_maestros(suma_ano_en_digitos(yy))  # año en dígitos
 
-        # 1) Misión
-        mision = reducir_con_maestros(dd)
+    # 1) Misión
+    mision = reducir_con_maestros(dd)
 
-        # 2) Sendero Natal (fecha completa)
-        sendero_natal = reducir_con_maestros(dd + mm + suma_ano_en_digitos(yy))
+    # 2) Sendero Natal (fecha completa)
+    sendero_natal = reducir_con_maestros(dd + mm + suma_ano_en_digitos(yy))
 
-        # 3) Animal Espiritual 1 (estricto 1-9)
-        animal1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 3) Animal Espiritual 1 (estricto 1-9)
+    animal1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 4) Animal Espiritual 2
-        animal2_cand = reducir_estricto_1a9(dd_red_maestros)  # “suma del día reducida a un dígito”
-        animal2 = None if animal2_cand == animal1 else animal2_cand
+    # 4) Animal Espiritual 2
+    animal2_cand = reducir_estricto_1a9(dd_red_maestros)  # “suma del día reducida a un dígito”
+    animal2 = None if animal2_cand == animal1 else animal2_cand
 
-        # 5) Día de nacimiento sin reducir
-        dia_nac = dd
+    # 5) Día de nacimiento sin reducir
+    dia_nac = dd
 
-        # 6) Primer Tarot (estricto 1-9)
-        tarot1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 6) Primer Tarot (estricto 1-9)
+    tarot1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 7) Segundo Tarot
-        tarot2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
-        tarot2 = None if tarot2_cand == tarot1 else tarot2_cand
+    # 7) Segundo Tarot
+    tarot2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    tarot2 = None if tarot2_cand == tarot1 else tarot2_cand
 
-        # 8) Salud y Espíritu 1
-        salud1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 8) Salud y Espíritu 1
+    salud1 = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 9) Salud y Espíritu 2
-        salud2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
-        salud2 = None if salud2_cand == salud1 else salud2_cand
+    # 9) Salud y Espíritu 2
+    salud2_cand = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    salud2 = None if salud2_cand == salud1 else salud2_cand
 
-        # 10) Arquetipo de Amante
-        amante = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 10) Arquetipo de Amante
+    amante = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 11) Vincular
-        vincular = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 11) Vincular
+    vincular = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 12) Lección de Vida
-        leccion_vida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    # 12) Lección de Vida
+    leccion_vida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
 
-        # 13) Primer Desafío = |dia reducido - mes reducido|
-        primer_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(mm))
+    # 13) Primer Desafío = |dia reducido - mes reducido|
+    primer_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(mm))
 
-        # 14) Segundo Desafío = |dia reducido - año reducido|
-        segundo_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(suma_ano_en_digitos(yy)))
+    # 14) Segundo Desafío = |dia reducido - año reducido|
+    segundo_desafio = abs(reducir_con_maestros(dd) - reducir_con_maestros(suma_ano_en_digitos(yy)))
 
-        # 15) Don Divino = suma dos últimas cifras del año, reduce salvo 10/11
-        ult2 = yy % 100
-        don_divino = reducir_excepcion_10_11(suma_digitos(ult2))
+    # 15) Don Divino = suma dos últimas cifras del año, reduce salvo 10/11
+    ult2 = yy % 100
+    don_divino = reducir_excepcion_10_11(suma_digitos(ult2))
 
-        # 16) Nro de Raíz = si (dia+mes+año) < 10 => no posee
-        total_raiz = dd + mm + yy
-        nro_raiz = None if total_raiz < 10 else reducir_estricto_1a9(total_raiz)
+    # 16) Nro de Raíz = si (dia+mes+año) < 10 => no posee
+    total_raiz = dd + mm + yy
+    nro_raiz = None if total_raiz < 10 else reducir_estricto_1a9(total_raiz)
 
-        # 17) Esencia = vocales(nombre)+vocales(apellido) reduce con maestros
-        esencia = reducir_con_maestros(suma_vocales(nombre) + suma_vocales(apellido))
+    # 17) Esencia = vocales(nombre)+vocales(apellido) reduce con maestros
+    esencia = reducir_con_maestros(suma_vocales(nombre) + suma_vocales(apellido))
 
-        # 18) Imagen = consonantes(nombre)+consonantes(apellido) reduce con maestros
-        imagen = reducir_con_maestros(suma_consonantes(nombre) + suma_consonantes(apellido))
+    # 18) Imagen = consonantes(nombre)+consonantes(apellido) reduce con maestros
+    imagen = reducir_con_maestros(suma_consonantes(nombre) + suma_consonantes(apellido))
 
-        # 19) Destino = suma(nombre)+suma(apellido) reduce con maestros
-        destino = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
+    # 19) Destino = suma(nombre)+suma(apellido) reduce con maestros
+    destino = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
 
-        # 20) Nro Letras Nombre (sin espacios)
-        nro_letras = contar_letras(nombre + apellido)
+    # 20) Nro Letras Nombre (sin espacios)
+    nro_letras = contar_letras(nombre + apellido)
 
-        # 21..25 años importantes
-        anio_imp_1 = nro_letras * 1
-        anio_imp_2 = nro_letras * 2
-        anio_imp_3 = nro_letras * 3
-        anio_imp_4 = nro_letras * 4
-        anio_imp_5 = nro_letras * 5
+    # 21..25 años importantes
+    anio_imp_1 = nro_letras * 1
+    anio_imp_2 = nro_letras * 2
+    anio_imp_3 = nro_letras * 3
+    anio_imp_4 = nro_letras * 4
+    anio_imp_5 = nro_letras * 5
 
-        # 26) Características Vida = nro letras reducido a 1 dígito (estricto)
-        caract_vida = reducir_estricto_1a9(nro_letras) if nro_letras else None
+    # 26) Características Vida = nro letras reducido a 1 dígito (estricto)
+    caract_vida = reducir_estricto_1a9(nro_letras) if nro_letras else None
 
-        # 27) Nro Hereditario = suma(apellido) reducido a 1 dígito (estricto)
-        nro_hereditario = reducir_estricto_1a9(suma_nombre(apellido)) if apellido else None
+    # 27) Nro Hereditario = suma(apellido) reducido a 1 dígito (estricto)
+    nro_hereditario = reducir_estricto_1a9(suma_nombre(apellido)) if apellido else None
 
-        # 28) Talento = igual destino (según tu lista)
-        talento = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
+    # 28) Talento = igual destino (según tu lista)
+    talento = reducir_con_maestros(suma_nombre(nombre) + suma_nombre(apellido))
 
-        # 29) Estado Espiritual = moda números del nombre+apellido
-        estado_espiritual = moda_numeros(nombre + " " + apellido)
+    # 29) Estado Espiritual = moda números del nombre+apellido
+    estado_espiritual = moda_numeros(nombre + " " + apellido)
 
-        # 30) Desafío Íntimo
-        des_intimo = abs(primera_vocal_valor(nombre) - primera_vocal_valor(apellido))
+    # 30) Desafío Íntimo
+    des_intimo = abs(primera_vocal_valor(nombre) - primera_vocal_valor(apellido))
 
-        # 31) Desafío Realización
-        des_real = abs(primera_consonante_valor(nombre) - primera_consonante_valor(apellido))
+    # 31) Desafío Realización
+    des_real = abs(primera_consonante_valor(nombre) - primera_consonante_valor(apellido))
 
-        # 32) Desafío Expresión = suma(des_intimo + des_real) reducido a 1 dígito (estricto)
-        des_exp = reducir_estricto_1a9(des_intimo + des_real)
+    # 32) Desafío Expresión = suma(des_intimo + des_real) reducido a 1 dígito (estricto)
+    des_exp = reducir_estricto_1a9(des_intimo + des_real)
 
-        # 33) Nro Expresión = suma(nombre+apellido) reduce con excepción 11/22 (solo)
-        def reducir_solo_11_22(n: int) -> int:
-            n = abs(int(n))
-            while n > 9 and n not in {11, 22}:
-                n = suma_digitos(n)
-            return n
-        nro_expresion = reducir_solo_11_22(suma_nombre(nombre) + suma_nombre(apellido))
+    # 33) Nro Expresión = suma(nombre+apellido) reduce con excepción 11/22 (solo)
+    def reducir_solo_11_22(n: int) -> int:
+        n = abs(int(n))
+        while n > 9 and n not in {11, 22}:
+            n = suma_digitos(n)
+        return n
+    nro_expresion = reducir_solo_11_22(suma_nombre(nombre) + suma_nombre(apellido))
 
-        # 34) Potencial = Sendero Natal + Destino reducido con excepción 11/22
-        potencial = reducir_solo_11_22(sendero_natal + destino)
+    # 34) Potencial = Sendero Natal + Destino reducido con excepción 11/22
+    potencial = reducir_solo_11_22(sendero_natal + destino)
 
-        # 35) Años 1ra etapa = 1..(36 - suma(dia+mes+año) reducida)
-        suma_fn_reducida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
-        tope_1ra = 36 - suma_fn_reducida
-        if tope_1ra < 1:
-            rango_1ra = "1"
-        else:
-            rango_1ra = f"1 - {tope_1ra}"
+    # 35) Años 1ra etapa = 1..(36 - suma(dia+mes+año) reducida)
+    suma_fn_reducida = reducir_estricto_1a9(dd + mm + suma_ano_en_digitos(yy))
+    tope_1ra = 36 - suma_fn_reducida
+    if tope_1ra < 1:
+        rango_1ra = "1"
+    else:
+        rango_1ra = f"1 - {tope_1ra}"
 
-        # 36) Primera Etapa = (dia+mes) reducido con excepción 11/22
-        primera_etapa = reducir_solo_11_22(dd + mm)
+    # 36) Primera Etapa = (dia+mes) reducido con excepción 11/22
+    primera_etapa = reducir_solo_11_22(dd + mm)
 
-        # 37) Años 2da etapa
-        ini_2da = tope_1ra + 1 if tope_1ra >= 1 else 2
-        fin_2da = (tope_1ra + 10) if tope_1ra >= 1 else 11
-        rango_2da = f"{ini_2da} - {fin_2da}"
+    # 37) Años 2da etapa
+    ini_2da = tope_1ra + 1 if tope_1ra >= 1 else 2
+    fin_2da = (tope_1ra + 10) if tope_1ra >= 1 else 11
+    rango_2da = f"{ini_2da} - {fin_2da}"
 
-        # 38) Segunda Etapa = (dia + año_dígitos) reducido con excepción 11/22
-        segunda_etapa = reducir_solo_11_22(dd + suma_ano_en_digitos(yy))
+    # 38) Segunda Etapa = (dia + año_dígitos) reducido con excepción 11/22
+    segunda_etapa = reducir_solo_11_22(dd + suma_ano_en_digitos(yy))
 
-        # 39) Años 3ra etapa
-        ini_3ra = fin_2da + 1
-        fin_3ra = fin_2da + 10
-        rango_3ra = f"{ini_3ra} - {fin_3ra}"
+    # 39) Años 3ra etapa
+    ini_3ra = fin_2da + 1
+    fin_3ra = fin_2da + 10
+    rango_3ra = f"{ini_3ra} - {fin_3ra}"
 
-        # 40) Tercera Etapa = (1ra + 2da) reducido con excepción 11/22
-        tercera_etapa = reducir_solo_11_22(primera_etapa + segunda_etapa)
+    # 40) Tercera Etapa = (1ra + 2da) reducido con excepción 11/22
+    tercera_etapa = reducir_solo_11_22(primera_etapa + segunda_etapa)
 
-        # 41) Años 4ta etapa
-        ini_4ta = fin_3ra + 1
-        fin_4ta = fin_3ra + 10
-        rango_4ta = f"{ini_4ta} - {fin_4ta}"
+    # 41) Años 4ta etapa
+    ini_4ta = fin_3ra + 1
+    fin_4ta = fin_3ra + 10
+    rango_4ta = f"{ini_4ta} - {fin_4ta}"
 
-        # 42) Cuarta Etapa = (mes + año_dígitos) reducido con excepción 11/22
-        cuarta_etapa = reducir_solo_11_22(mm + suma_ano_en_digitos(yy))
+    # 42) Cuarta Etapa = (mes + año_dígitos) reducido con excepción 11/22
+    cuarta_etapa = reducir_solo_11_22(mm + suma_ano_en_digitos(yy))
 
-        # 43) Año Personal = (dia+mes+year_actual) reducido con excepción 11/22
-        ano_personal = reducir_solo_11_22(dd + mm + suma_ano_en_digitos(ANO_ACTUAL))
+    # 43) Año Personal = (dia+mes+year_actual) reducido con excepción 11/22
+    ano_personal = reducir_solo_11_22(dd + mm + suma_ano_en_digitos(ANO_ACTUAL))
 
-        # 44) Dígito Edad = suma(edad + (edad-1)) reducido con excepción 11/22
-        edad = ANO_ACTUAL - yy
-        digito_edad = reducir_solo_11_22(edad + (edad - 1))
+    # 44) Dígito Edad = suma(edad + (edad-1)) reducido con excepción 11/22
+    edad = ANO_ACTUAL - yy
+    digito_edad = reducir_solo_11_22(edad + (edad - 1))
 
-        # 45) Armónico = (suma año actual + suma año nac) => reduce a 2 dígitos; si <78, dejar; si no, reducir 1-9
-        armonico_raw = suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(yy)
-        armonico_2d = reducir_a_dos_digitos(armonico_raw)
-        armonico = armonico_2d if armonico_2d < 78 else reducir_estricto_1a9(armonico_2d)
+    # 45) Armónico = (suma año actual + suma año nac) => reduce a 2 dígitos; si <78, dejar; si no, reducir 1-9
+    armonico_raw = suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(yy)
+    armonico_2d = reducir_a_dos_digitos(armonico_raw)
+    armonico = armonico_2d if armonico_2d < 78 else reducir_estricto_1a9(armonico_2d)
 
-        # 46) Tarot 1er Cuat = (suma año actual + suma año actual) - suma año nac  (regla <78)
-        tarot_1c = regla_tarot_78((suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(ANO_ACTUAL)) - suma_ano_en_digitos(yy))
+    # 46) Tarot 1er Cuat = (suma año actual + suma año actual) - suma año nac  (regla <78)
+    tarot_1c = regla_tarot_78((suma_ano_en_digitos(ANO_ACTUAL) + suma_ano_en_digitos(ANO_ACTUAL)) - suma_ano_en_digitos(yy))
 
-        # 47) Tarot 2do Cuat = (suma año actual + dia + mes + año_nac_dígitos) (regla <78)
-        tarot_2c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + dd + mm + suma_ano_en_digitos(yy))
+    # 47) Tarot 2do Cuat = (suma año actual + dia + mes + año_nac_dígitos) (regla <78)
+    tarot_2c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + dd + mm + suma_ano_en_digitos(yy))
 
-        # 48) Tarot 3er Cuat = (suma año actual + clave personal del día y mes) (regla <78)
-        # Interpretación: clave día+mes reducida con excepción 11/22
-        clave_dia_mes = reducir_solo_11_22(dd + mm)
-        tarot_3c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + clave_dia_mes)
+    # 48) Tarot 3er Cuat = (suma año actual + clave personal del día y mes) (regla <78)
+    # Interpretación: clave día+mes reducida con excepción 11/22
+    clave_dia_mes = reducir_solo_11_22(dd + mm)
+    tarot_3c = regla_tarot_78(suma_ano_en_digitos(ANO_ACTUAL) + clave_dia_mes)
 
-        # 49..60 Meses = (año personal + k) reducida con excepción 11/22
-        def mes_personal(k: int) -> int:
-            return reducir_solo_11_22(ano_personal + k)
+    # 49..60 Meses = (año personal + k) reducida con excepción 11/22
+    def mes_personal(k: int) -> int:
+        return reducir_solo_11_22(ano_personal + k)
 
-        enero = mes_personal(1)
-        febrero = mes_personal(2)
-        marzo = mes_personal(3)
-        abril = mes_personal(4)
-        mayo = mes_personal(5)
-        junio = mes_personal(6)
-        julio = mes_personal(7)
-        agosto = mes_personal(8)
-        septiembre = mes_personal(9)
-        octubre = mes_personal(1)
-        noviembre = mes_personal(2)
-        diciembre = mes_personal(3)
+    enero = mes_personal(1)
+    febrero = mes_personal(2)
+    marzo = mes_personal(3)
+    abril = mes_personal(4)
+    mayo = mes_personal(5)
+    junio = mes_personal(6)
+    julio = mes_personal(7)
+    agosto = mes_personal(8)
+    septiembre = mes_personal(9)
+    octubre = mes_personal(1)
+    noviembre = mes_personal(2)
+    diciembre = mes_personal(3)
 
-        # Empaquetar resultados en el ORDEN EXACTO
-        # (concepto hoja_dicc, etiqueta, valor, nota_si_no_dicc)
-        items = [
-            ("mision", "Misión", mision, None),
-            ("sendero natal", "Sendero Natal", sendero_natal, None),
-            ("animal espiritual 1", "Animal Espiritual 1", animal1, None),
-            ("animal espiritual 2", "Animal Espiritual 2", animal2, "no posee segundo animal espiritual" if animal2 is None else None),
-            ("dia de nacimiento", "Día de Nacimiento", dia_nac, None),
-            ("primer tarot", "Primer Tarot", tarot1, None),
-            ("segundo tarot", "Segundo Tarot", tarot2, "no posee segundo tarot" if tarot2 is None else None),
-            ("salud y espiritu 1", "Salud y Espíritu 1", salud1, None),
-            ("salud y espiritu 2", "Salud y Espíritu 2", salud2, "No existe una segunda relación entre tu espíritu y tu salud" if salud2 is None else None),
-            ("arquetipo de amante", "Arquetipo de Amante", amante, None),
-            ("vincular", "Vincular", vincular, None),
-            ("leccion de vida", "Lección de Vida", leccion_vida, None),
-            ("primer desafio", "Primer Desafío", primer_desafio, None),
-            ("segundo desafio", "Segundo Desafío", segundo_desafio, None),
-            ("don divino", "Don Divino", don_divino, None),
-            ("nro de raiz", "Número de Raíz", nro_raiz, "No posees número de raíz" if nro_raiz is None else None),
-            ("esencia", "Esencia", esencia, None),
-            ("imagen", "Imagen", imagen, None),
-            ("destino", "Destino", destino, None),
-            ("nro letras nombre", "Nro. Letras (Nombre+Apellido)", nro_letras, None),
-            ("primer año importante de tu vida", "Primer año importante", anio_imp_1, None),
-            ("segundo año importante de tu vida", "Segundo año importante", anio_imp_2, None),
-            ("tercer año importante de tu vida", "Tercer año importante", anio_imp_3, None),
-            ("cuarto año importante de tu vida", "Cuarto año importante", anio_imp_4, None),
-            ("quinto año importante de tu vida", "Quinto año importante", anio_imp_5, None),
-            ("caracteristicas vida", "Características de Vida", caract_vida, None),
-            ("nro hereditario", "Número Hereditario", nro_hereditario, None),
-            ("talento", "Talento", talento, None),
-            ("estado espiritual", "Estado Espiritual", estado_espiritual, None),
-            ("desafio intimo", "Desafío Íntimo", des_intimo, None),
-            ("desafio de realizacion", "Desafío de Realización", des_real, None),
-            ("desafio de expresion", "Desafío de Expresión", des_exp, None),
-            ("nro de expresion", "Número de Expresión", nro_expresion, None),
-            ("potencial", "Potencial", potencial, None),
-            ("años de la primera etapa", "Años de la Primera Etapa", rango_1ra, None),
-            ("primera etapa", "Primera Etapa", primera_etapa, None),
-            ("años de la segunda etapa", "Años de la Segunda Etapa", rango_2da, None),
-            ("segunda etapa", "Segunda Etapa", segunda_etapa, None),
-            ("años de la tercera etapa", "Años de la Tercera Etapa", rango_3ra, None),
-            ("tercera etapa", "Tercera Etapa", tercera_etapa, None),
-            ("años de la cuarta etapa", "Años de la Cuarta Etapa", rango_4ta, None),
-            ("cuarta etapa", "Cuarta Etapa", cuarta_etapa, None),
-            ("año personal", "Año Personal", ano_personal, None),
-            ("digito de la edad", "Dígito de la Edad", digito_edad, None),
-            ("armonico", "Armónico", armonico, None),
-            ("tarot 1er cuat", "Tarot 1er Cuatrimestre", tarot_1c, None),
-            ("tarot 2do cuat", "Tarot 2do Cuatrimestre", tarot_2c, None),
-            ("tarot 3er cuat", "Tarot 3er Cuatrimestre", tarot_3c, None),
-            ("enero", "Enero", enero, None),
-            ("febrero", "Febrero", febrero, None),
-            ("marzo", "Marzo", marzo, None),
-            ("abril", "Abril", abril, None),
-            ("mayo", "Mayo", mayo, None),
-            ("junio", "Junio", junio, None),
-            ("julio", "Julio", julio, None),
-            ("agosto", "Agosto", agosto, None),
-            ("septiembre", "Septiembre", septiembre, None),
-            ("octubre", "Octubre", octubre, None),
-            ("noviembre", "Noviembre", noviembre, None),
-            ("diciembre", "Diciembre", diciembre, None),
-        ]
-        return {
-            "nombre_full": _norm_txt(nombre_full),
-            "nombre": nombre,
-            "apellido": apellido,
-            "fecha_nac": fecha_nac.strftime("%d/%m/%Y"),
-            "items": items,
-        }
+    # Empaquetar resultados en el ORDEN EXACTO
+    # (concepto hoja_dicc, etiqueta, valor, nota_si_no_dicc)
+    items = [
+        ("mision", "Misión", mision, None),
+        ("sendero natal", "Sendero Natal", sendero_natal, None),
+        ("animal espiritual 1", "Animal Espiritual 1", animal1, None),
+        ("animal espiritual 2", "Animal Espiritual 2", animal2, "no posee segundo animal espiritual" if animal2 is None else None),
+        ("dia de nacimiento", "Día de Nacimiento", dia_nac, None),
+        ("primer tarot", "Primer Tarot", tarot1, None),
+        ("segundo tarot", "Segundo Tarot", tarot2, "no posee segundo tarot" if tarot2 is None else None),
+        ("salud y espiritu 1", "Salud y Espíritu 1", salud1, None),
+        ("salud y espiritu 2", "Salud y Espíritu 2", salud2, "No existe una segunda relación entre tu espíritu y tu salud" if salud2 is None else None),
+        ("arquetipo de amante", "Arquetipo de Amante", amante, None),
+        ("vincular", "Vincular", vincular, None),
+        ("leccion de vida", "Lección de Vida", leccion_vida, None),
+        ("primer desafio", "Primer Desafío", primer_desafio, None),
+        ("segundo desafio", "Segundo Desafío", segundo_desafio, None),
+        ("don divino", "Don Divino", don_divino, None),
+        ("nro de raiz", "Número de Raíz", nro_raiz, "No posees número de raíz" if nro_raiz is None else None),
+        ("esencia", "Esencia", esencia, None),
+        ("imagen", "Imagen", imagen, None),
+        ("destino", "Destino", destino, None),
+        ("nro letras nombre", "Nro. Letras (Nombre+Apellido)", nro_letras, None),
+        ("primer año importante de tu vida", "Primer año importante", anio_imp_1, None),
+        ("segundo año importante de tu vida", "Segundo año importante", anio_imp_2, None),
+        ("tercer año importante de tu vida", "Tercer año importante", anio_imp_3, None),
+        ("cuarto año importante de tu vida", "Cuarto año importante", anio_imp_4, None),
+        ("quinto año importante de tu vida", "Quinto año importante", anio_imp_5, None),
+        ("caracteristicas vida", "Características de Vida", caract_vida, None),
+        ("nro hereditario", "Número Hereditario", nro_hereditario, None),
+        ("talento", "Talento", talento, None),
+        ("estado espiritual", "Estado Espiritual", estado_espiritual, None),
+        ("desafio intimo", "Desafío Íntimo", des_intimo, None),
+        ("desafio de realizacion", "Desafío de Realización", des_real, None),
+        ("desafio de expresion", "Desafío de Expresión", des_exp, None),
+        ("nro de expresion", "Número de Expresión", nro_expresion, None),
+        ("potencial", "Potencial", potencial, None),
+        ("años de la primera etapa", "Años de la Primera Etapa", rango_1ra, None),
+        ("primera etapa", "Primera Etapa", primera_etapa, None),
+        ("años de la segunda etapa", "Años de la Segunda Etapa", rango_2da, None),
+        ("segunda etapa", "Segunda Etapa", segunda_etapa, None),
+        ("años de la tercera etapa", "Años de la Tercera Etapa", rango_3ra, None),
+        ("tercera etapa", "Tercera Etapa", tercera_etapa, None),
+        ("años de la cuarta etapa", "Años de la Cuarta Etapa", rango_4ta, None),
+        ("cuarta etapa", "Cuarta Etapa", cuarta_etapa, None),
+        ("año personal", "Año Personal", ano_personal, None),
+        ("digito de la edad", "Dígito de la Edad", digito_edad, None),
+        ("armonico", "Armónico", armonico, None),
+        ("tarot 1er cuat", "Tarot 1er Cuatrimestre", tarot_1c, None),
+        ("tarot 2do cuat", "Tarot 2do Cuatrimestre", tarot_2c, None),
+        ("tarot 3er cuat", "Tarot 3er Cuatrimestre", tarot_3c, None),
+        ("enero", "Enero", enero, None),
+        ("febrero", "Febrero", febrero, None),
+        ("marzo", "Marzo", marzo, None),
+        ("abril", "Abril", abril, None),
+        ("mayo", "Mayo", mayo, None),
+        ("junio", "Junio", junio, None),
+        ("julio", "Julio", julio, None),
+        ("agosto", "Agosto", agosto, None),
+        ("septiembre", "Septiembre", septiembre, None),
+        ("octubre", "Octubre", octubre, None),
+        ("noviembre", "Noviembre", noviembre, None),
+        ("diciembre", "Diciembre", diciembre, None),
+    ]
+
+    return {
+        "nombre_full": _norm_txt(nombre_full),
+        "nombre": nombre,
+        "apellido": apellido,
+        "fecha_nac": fecha_nac.strftime("%d/%m/%Y"),
+        "items": items,
+    }
     # =========================
 # PDF BONITO (sin tablas feas, respirable)
 # =========================
@@ -1968,7 +1942,7 @@ def build_pdf_premium(resultado: dict) -> bytes:
 
         # Texto largo desde diccionario
         if isinstance(valor, int):
-            info = dicc_get(hoja_dicc, valor)
+            info = hoja_dicc.get(valor, {})
             texto = info.get("texto", "").strip()
             texto = personalizar_texto(texto, resultado["nombre_full"])
 
@@ -1996,6 +1970,7 @@ def build_pdf_premium(resultado: dict) -> bytes:
  # ======================================================
 # ✅ DESBLOQUEO + EJECUCIÓN PREMIUM (BLOQUE FINAL ÚNICO)
 # ======================================================
+
 if confirmar_datos:
     st.session_state.premium_activo = True
     st.success("Versión completa desbloqueada ✅")
