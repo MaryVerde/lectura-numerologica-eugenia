@@ -1942,7 +1942,7 @@ def build_pdf_premium(resultado: dict) -> bytes:
 
         # Texto largo desde diccionario
         if isinstance(valor, int):
-            info = hoja_dicc.get(valor, {})
+            info = dicc_get(hoja_dicc, valor)
             texto = info.get("texto", "").strip()
             texto = personalizar_texto(texto, resultado["nombre_full"])
 
